@@ -61,6 +61,8 @@ def run_statistics():
         
         # 1. Basic Counts
         total_records = conn.execute("SELECT COUNT(*) FROM publications").fetchone()[0]
+        # Get total CASE REPORTS for subset calculations
+        total_case_reports = conn.execute("SELECT COUNT(*) FROM publications WHERE category = 'Case Report'").fetchone()[0]
         
         if total_records == 0:
             print(f"⚠️ The database at {DB_PATH} is empty.")
@@ -68,34 +70,61 @@ def run_statistics():
 
         print(f"\n📊 Statistical Report for: {DB_PATH}")
         print(f"Total Filtered Records: {total_records:,}")
+        print(f"Total Case Reports:     {total_case_reports:,}")
         
         # --- Random Sample ---
         print_random_sample(conn, seed=17)
 
-        # 2. LLM Category Distribution (with percentages)
-        print("\n🗂️ LLM Category Distribution:")
+        # 2. LLM Category Distribution (Same as before, based on total)
+        print("\n🗂️ LLM Category Distribution (of Total Records):")
         df_categories = pd.read_sql_query("SELECT category, COUNT(*) as count FROM publications GROUP BY category ORDER BY count DESC", conn)
-        total_categories = df_categories['count'].sum()
         for _, row in df_categories.iterrows():
-            percentage = (row['count'] / total_categories) * 100 if total_categories > 0 else 0
+            percentage = (row['count'] / total_records) * 100
             print(f"  - {str(row['category']):<15}: {row['count']:>8,}  ({percentage:>5.1f}%)")
 
-        # 3. LLM Rarity Level Distribution (with percentages)
-        print("\n💎 Case Report Rarity Levels:")
-        df_rarity = pd.read_sql_query("SELECT rarity_level, COUNT(*) as count FROM publications GROUP BY rarity_level ORDER BY count DESC", conn)
-        total_rarity = df_rarity['count'].sum()
+        # 3. Case Report Rarity Levels (FILTERED)
+        print("\n💎 Case Report Rarity Levels (Case Reports Only):")
+        df_rarity = pd.read_sql_query("""
+            SELECT rarity_level, COUNT(*) as count 
+            FROM publications 
+            WHERE category = 'Case Report' 
+            GROUP BY rarity_level 
+            ORDER BY count DESC
+        """, conn)
         for _, row in df_rarity.iterrows():
-            percentage = (row['count'] / total_rarity) * 100 if total_rarity > 0 else 0
+            percentage = (row['count'] / total_case_reports) * 100 if total_case_reports > 0 else 0
             print(f"  - {str(row['rarity_level']):<28}: {row['count']:>8,}  ({percentage:>5.1f}%)")
 
-        # 4. Top 10 Journals (with percentages)
-        print("\n🏥 Top 10 Journals:")
-        df_journals = pd.read_sql_query("SELECT journal, COUNT(*) as count FROM publications GROUP BY journal ORDER BY count DESC LIMIT 10", conn)
+        # 4. Top 10 Journals (FILTERED)
+        print("\n🏥 Top 10 Journals (Case Reports Only):")
+        df_journals = pd.read_sql_query("""
+            SELECT journal, COUNT(*) as count 
+            FROM publications 
+            WHERE category = 'Case Report' 
+            GROUP BY journal 
+            ORDER BY count DESC 
+            LIMIT 10
+        """, conn)
         for i, row in df_journals.iterrows():
             journal_name = (str(row['journal']) or "Unknown")[:45]
-            # Calculate percentage against the total number of records in the database
-            percentage = (row['count'] / total_records) * 100 if total_records > 0 else 0
+            percentage = (row['count'] / total_case_reports) * 100 if total_case_reports > 0 else 0
             print(f"  {i+1:2}. {journal_name:<45} | {row['count']:>6,}  ({percentage:>5.1f}%)")
+            
+        # 5. Top 5 Years (FILTERED)
+        print("\n📅 Top 5 Publication Years (Case Reports Only):")
+        df_years = pd.read_sql_query("""
+            SELECT year, COUNT(*) as count 
+            FROM publications 
+            WHERE year IS NOT NULL AND category = 'Case Report'
+            GROUP BY year 
+            ORDER BY count DESC 
+            LIMIT 5
+        """, conn)
+
+        for i, row in df_years.iterrows():
+            year_val = str(int(row['year'])) if row['year'] else "Unknown"
+            percentage = (row['count'] / total_case_reports) * 100 if total_case_reports > 0 else 0
+            print(f"  {i+1:2}. {year_val:<15} | {row['count']:>8,}  ({percentage:>5.1f}%)")
 
         conn.close()
         print("\n" + "=" * 60)

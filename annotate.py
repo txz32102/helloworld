@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from starlette.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -8,8 +8,10 @@ import uvicorn
 app = FastAPI()
 
 # --- CONFIGURATION ---
-DATA_ROOT = "/home/data1/musong/workspace/2026/03/07/helloworld/data/download_files"
-PROGRESS_FILE = "progress.txt"
+DATA_ROOT = "data/download_files"
+PROGRESS_FILE = "log/progress.txt"
+
+os.makedirs("log", exist_ok=True)
 
 # Mount the root data folder
 app.mount("/data_root", StaticFiles(directory=DATA_ROOT), name="data_root")

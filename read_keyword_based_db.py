@@ -1,18 +1,17 @@
-"""
-# Execution:
-python3 read_llm_filtered_db.py
-"""
 import sqlite3
 import pandas as pd
 import random
 import os
 
 # --- Configuration ---
-DB_PATH = "data/llm_filtered.db"
+DB_PATH = "data/keyword_filtered.db"
 
-def print_random_sample(conn, seed=42):
-    """Retrieves and prints EVERY field of a random record, formatting long texts nicely."""
-    print(f"\n🎲 FULL RECORD SAMPLE (Seed: {seed})")
+def print_random_sample(conn, seed=None):
+    """Retrieves and prints every field of a random record from the keyword-filtered DB."""
+    if seed is not None:
+        random.seed(seed)
+        
+    print(f"\n🎲 FULL RECORD SAMPLE (Seed: {seed if seed else 'Random'})")
     print("=" * 80)
     
     cursor = conn.cursor()
@@ -30,7 +29,6 @@ def print_random_sample(conn, seed=42):
     columns = [description[0] for description in cursor.description]
     
     # 3. Pick random index
-    random.seed(seed)
     random_idx = random.randint(0, total - 1)
     
     # 4. Fetch the full row
@@ -38,19 +36,21 @@ def print_random_sample(conn, seed=42):
     row = cursor.fetchone()
     record = dict(zip(columns, row))
 
-    # 5. Print short metadata keys first
-    long_text_keys = ['title', 'abstract', 'reasoning', 'raw_response']
+    # 5. Separate metadata from long text for better display
+    long_text_keys = ['title', 'abstract']
     metadata_keys = [k for k in columns if k not in long_text_keys]
     
     for key in metadata_keys:
         val = record.get(key)
         print(f"{key.upper():<15}: {val}")
     
-    # 6. Print Long Text Fields with dividers
+    # 6. Print Title and Abstract with formatting
     for key in long_text_keys:
         print(f"\n{key.upper()}:")
         print("-" * 60)
-        print(record.get(key) or "N/A")
+        text = record.get(key) or "N/A"
+        # Simple wrap-around for long abstracts
+        print(text if len(text) < 500 else text[:500] + "...") 
         print("-" * 60)
         
     print("=" * 80)
@@ -70,36 +70,57 @@ def run_statistics():
             print(f"⚠️ The database at {DB_PATH} is empty.")
             return
 
-        print(f"\n📊 Statistical Report for: {DB_PATH}")
-        print(f"Total Filtered Records: {total_records:,}")
+        print(f"\n📊 Statistical Report for Keyword Filtered Data")
+        print(f"Path: {DB_PATH}")
+        print(f"Total Matches Found: {total_records:,}")
         
         # --- Random Sample ---
         print_random_sample(conn, seed=42)
 
-        # 2. LLM Category Distribution (with percentages)
-        print("\n🗂️ LLM Category Distribution:")
-        df_categories = pd.read_sql_query("SELECT category, COUNT(*) as count FROM publications GROUP BY category ORDER BY count DESC", conn)
-        total_categories = df_categories['count'].sum()
-        for _, row in df_categories.iterrows():
-            percentage = (row['count'] / total_categories) * 100 if total_categories > 0 else 0
-            print(f"  - {str(row['category']):<15}: {row['count']:>8,}  ({percentage:>5.1f}%)")
-
-        # 3. LLM Rarity Level Distribution (with percentages)
-        print("\n💎 Case Report Rarity Levels:")
-        df_rarity = pd.read_sql_query("SELECT rarity_level, COUNT(*) as count FROM publications GROUP BY rarity_level ORDER BY count DESC", conn)
-        total_rarity = df_rarity['count'].sum()
-        for _, row in df_rarity.iterrows():
-            percentage = (row['count'] / total_rarity) * 100 if total_rarity > 0 else 0
-            print(f"  - {str(row['rarity_level']):<28}: {row['count']:>8,}  ({percentage:>5.1f}%)")
-
-        # 4. Top 10 Journals (with percentages)
-        print("\n🏥 Top 10 Journals:")
-        df_journals = pd.read_sql_query("SELECT journal, COUNT(*) as count FROM publications GROUP BY journal ORDER BY count DESC LIMIT 10", conn)
+        # 2. Top 10 Journals
+        print("\n🏥 Top 10 Journals in Filtered Results:")
+        query_journals = """
+            SELECT journal, COUNT(*) as count 
+            FROM publications 
+            GROUP BY journal 
+            ORDER BY count DESC 
+            LIMIT 10
+        """
+        df_journals = pd.read_sql_query(query_journals, conn)
         for i, row in df_journals.iterrows():
-            journal_name = (str(row['journal']) or "Unknown")[:45]
-            # Calculate percentage against the total number of records in the database
-            percentage = (row['count'] / total_records) * 100 if total_records > 0 else 0
-            print(f"  {i+1:2}. {journal_name:<45} | {row['count']:>6,}  ({percentage:>5.1f}%)")
+            journal_name = (str(row['journal']) or "Unknown")[:50]
+            pct = (row['count'] / total_records) * 100
+            print(f"  {i+1:2}. {journal_name:<50} | {row['count']:>6,} ({pct:>5.1f}%)")
+
+        # 3. Yearly Distribution (Top 10)
+        print("\n📅 Top 10 Publication Years:")
+        query_years = """
+            SELECT year, COUNT(*) as count 
+            FROM publications 
+            WHERE year IS NOT NULL
+            GROUP BY year 
+            ORDER BY count DESC 
+            LIMIT 10
+        """
+        df_years = pd.read_sql_query(query_years, conn)
+        for i, row in df_years.iterrows():
+            year_val = str(int(row['year']))
+            pct = (row['count'] / total_records) * 100
+            print(f"  {i+1:2}. {year_val:<15} | {row['count']:>8,} ({pct:>5.1f}%)")
+
+        # 4. License Type Distribution
+        print("\n📜 License Distribution:")
+        query_license = """
+            SELECT license, COUNT(*) as count 
+            FROM publications 
+            GROUP BY license 
+            ORDER BY count DESC
+        """
+        df_license = pd.read_sql_query(query_license, conn)
+        for _, row in df_license.iterrows():
+            lic = str(row['license'] or "Unknown")
+            pct = (row['count'] / total_records) * 100
+            print(f"  - {lic:<20}: {row['count']:>8,} ({pct:>5.1f}%)")
 
         conn.close()
         print("\n" + "=" * 60)

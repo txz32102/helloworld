@@ -83,7 +83,8 @@ def process_article(row_data, output_dir):
                 download_url = f"{BASE_S3_URL}/{clean_path}"
                 download_file(download_url, article_folder)
         else:
-            with open("download_errors.log", "a") as log:
+            os.makedirs("log", exist_ok=True)
+            with open("log/download_errors.log", "a") as log:
                 log.write(f"Metadata 404 for PMID {pmid} (PMC {pmc_str})\n")
     except Exception as e:
         with open("download_errors.log", "a") as log:

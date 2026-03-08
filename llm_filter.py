@@ -44,6 +44,10 @@ def run_filter(args):
     print(f"📥 Input DB: {args.in_db}")
     print(f"📤 Output DB: {args.out_db}")
     
+    # --- LOGGING SETUP ---
+    os.makedirs("log", exist_ok=True)
+    log_file_path = os.path.join("log", "skipped_records.log")
+    
     # Initialize Pipeline
     pipe = pipeline(
         "text-generation", 
@@ -108,6 +112,9 @@ def run_filter(args):
     skipped_count = 0
     saved_count = 0
 
+    # Open the log file for appending before the loop
+    log_file = open(log_file_path, "a", encoding="utf-8")
+
     for i, output in enumerate(tqdm(pipe(data_generator(), batch_size=args.batch_size, max_new_tokens=250, return_full_text=False), 
                                     total=total, desc="Filtering Abstracts")):
         rec = records[i]
@@ -118,7 +125,10 @@ def run_filter(args):
             clean_json = re.search(r'\{.*\}', raw_output, re.DOTALL).group(0)
             parsed = json.loads(clean_json)
         except Exception:
-            print(f"\n⚠️ [ID: {rec['id']}] Parse Error. Skipping record. Raw Output: {raw_output}")
+            error_msg = f"⚠️ [ID: {rec['id']}] Parse Error. Skipping record. Raw Output: {raw_output}"
+            print(f"\n{error_msg}")
+            log_file.write(error_msg + "\n")
+            log_file.flush() # Ensure it writes to disk immediately
             skipped_count += 1
             continue
 
@@ -127,7 +137,10 @@ def run_filter(args):
 
         # 2. Validate Categories
         if category not in VALID_CATEGORIES or rarity_level not in VALID_RARITIES:
-            print(f"\n⚠️ [ID: {rec['id']}] Invalid LLM Output. Skipping. (Got category: '{category}', rarity: '{rarity_level}')")
+            error_msg = f"⚠️ [ID: {rec['id']}] Invalid LLM Output. Skipping. (Got category: '{category}', rarity: '{rarity_level}')\nRaw Output: {raw_output}"
+            print(f"\n{error_msg}")
+            log_file.write(error_msg + "\n")
+            log_file.flush() # Ensure it writes to disk immediately
             skipped_count += 1
             continue
 
@@ -153,11 +166,15 @@ def run_filter(args):
                 out_conn.commit()
                 
         except sqlite3.Error as e:
-            print(f"\n❌ [ID: {rec['id']}] DB Insert Error: {e}")
+            db_err_msg = f"❌ [ID: {rec['id']}] DB Insert Error: {e}"
+            print(f"\n{db_err_msg}")
+            log_file.write(db_err_msg + "\n")
+            log_file.flush()
 
-    # Final Commit
+    # Final Commit & Cleanup
     out_conn.commit()
     out_conn.close()
+    log_file.close()
     
     print("\n" + "="*50)
     print("🎉 Processing Complete!")
@@ -165,6 +182,7 @@ def run_filter(args):
     print(f"Successfully Saved: {saved_count}")
     print(f"Skipped (Invalid/Errors): {skipped_count}")
     print(f"Output saved to: {args.out_db}")
+    print(f"Logs saved to: {log_file_path}")
     print("="*50)
 
 # --- 5. EXECUTION ---

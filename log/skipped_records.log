@@ -1,0 +1,7 @@
+⚠️ [ID: 769] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'oncological_rarity')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "oncological_rarity",
+  "reasoning": "The abstract describes a rare case of perianal mucinous adenocarcinoma occurring after Crohn's disease proctocolectomy, which is considered an oncological rarity."
+}
