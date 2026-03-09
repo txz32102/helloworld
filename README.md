@@ -4,6 +4,60 @@ This project aims to create a comprehensive benchmark dataset for medical case r
 
 Our primary data source is the PubMed Central (PMC) Open Access (OA) subset. We begin by downloading the complete archive index and subsequently extract and process the data to isolate case reports for downstream data mining and analysis.
 
+## 0. Dataset Preparation (Optional but recommended)
+
+> ⚡️⚡️⚡️**Save Time:** You can skip the manual processing described in **Steps 1 through 4** by downloading the pre-processed database files directly. This is the recommended path if you want to start inspecting or using the data immediately.
+
+### Step 1: Download Files
+
+Access the pre-processed data via the Google Drive link below:
+👉 **[Download Pre-processed Data](https://drive.google.com/drive/folders/1mT9b6NhcuxPMTQSvm0WSqFtExSoADJP3?usp=sharing)** (30GB)
+
+### Step 2: Setup Directory
+
+Place the downloaded files into a directory named `./data` at the root of the project. Your directory structure should look like this:
+
+```text
+data/
+├── download_files.zip       # Contains ~3000 PDFs with XML, images, and metadata
+├── keyword_filtered.db
+├── llm_filtered.db
+├── oa_file_list.txt
+├── source_metadata.db
+└── title_abstract_db/
+    ├── pub_abstracts_2000.db
+    ├── ...
+    └── pub_abstracts_2026.db
+
+2 directories, 32 files
+```
+
+### Step 3: Extract Data
+
+Run the following command to unzip the PDF archive into the data folder:
+
+```bash
+unzip -o data/download_files.zip -d data
+```
+
+### Step 4: Data Inspection & Verification
+
+Once the databases are in place, use the provided inspection scripts to verify the data integrity and explore the contents of each SQLite database.
+
+| Script | Purpose |
+| --- | --- |
+| `read_metadata_db.py` | Inspect general source metadata for all records. |
+| `read_title_abstract_db.py` | View extracted titles and abstracts (2000–2026). |
+| `read_keyword_based_db.py` | Review files identified through keyword matching. |
+| `read_llm_filtered_db.py` | Inspect the final LLM-refined dataset. |
+
+Execute any of the scripts from the root directory to see a sample of the data:
+
+```bash
+# Example: Inspect the keyword-filtered database
+python3 read_keyword_based_db.py
+```
+
 ## 1. Prepare the Data
 
 The first step is to download the index of all available OA articles from the NCBI FTP server. This file (`oa_file_list.txt`) is approximately 786MB.
@@ -98,3 +152,23 @@ Once the LLM has flagged the relevant articles, you can inspect the filtered dat
 ```bash
 python3 read_llm_filtered_db.py
 ```
+
+
+## 4. Download the pdf files
+
+We can use the filtered database to download the pdf files of case reports.
+```bash
+python3 download_files.py
+```
+
+## 5. Choose the golden standard 1k case reports
+
+We write a simple script using a web application to choose the gold standard 1,000 case reports from `data/download_files` (a subset of case reports downloaded with `download_files.py` from the years 2020–2026).
+
+```bash
+python3 annotate.py
+```
+
+The web page look like this:![alt text](imgs/web_page.png)
+
+The results is saved at `log/progress.txt`.

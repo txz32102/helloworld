@@ -1,0 +1,9 @@
+requests
+pandas
+torch
+tqdm
+transformers
+fastapi
+starlette
+pydantic
+uvicorn

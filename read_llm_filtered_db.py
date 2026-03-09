@@ -61,7 +61,6 @@ def run_statistics():
         
         # 1. Basic Counts
         total_records = conn.execute("SELECT COUNT(*) FROM publications").fetchone()[0]
-        # Get total CASE REPORTS for subset calculations
         total_case_reports = conn.execute("SELECT COUNT(*) FROM publications WHERE category = 'Case Report'").fetchone()[0]
         
         if total_records == 0:
@@ -73,9 +72,9 @@ def run_statistics():
         print(f"Total Case Reports:     {total_case_reports:,}")
         
         # --- Random Sample ---
-        print_random_sample(conn, seed=17)
+        print_random_sample(conn, seed=42)
 
-        # 2. LLM Category Distribution (Same as before, based on total)
+        # 2. LLM Category Distribution
         print("\n🗂️ LLM Category Distribution (of Total Records):")
         df_categories = pd.read_sql_query("SELECT category, COUNT(*) as count FROM publications GROUP BY category ORDER BY count DESC", conn)
         for _, row in df_categories.iterrows():
@@ -95,7 +94,36 @@ def run_statistics():
             percentage = (row['count'] / total_case_reports) * 100 if total_case_reports > 0 else 0
             print(f"  - {str(row['rarity_level']):<28}: {row['count']:>8,}  ({percentage:>5.1f}%)")
 
-        # 4. Top 10 Journals (FILTERED)
+        # 4. License Distribution (FILTERED - ALL)
+        print("\n📜 License Distribution (Case Reports Only):")
+        df_licenses = pd.read_sql_query("""
+            SELECT license, COUNT(*) as count 
+            FROM publications 
+            WHERE category = 'Case Report'
+            GROUP BY license 
+            ORDER BY count DESC
+        """, conn)
+
+        safe_count = 0
+        SAFE_LIST = ['CC BY', 'CC BY-SA', 'CC0']
+
+        for i, row in df_licenses.iterrows():
+            lic_name = str(row['license'] or "Unknown")
+            count = row['count']
+            percentage = (count / total_case_reports) * 100 if total_case_reports > 0 else 0
+            
+            # Track the "Safe" total
+            if lic_name in SAFE_LIST:
+                safe_count += count
+            
+            print(f"  {i+1:2}. {lic_name:<20} | {count:>8,}  ({percentage:>5.1f}%)")
+
+        # --- AI Training Readiness Summary ---
+        safe_pct = (safe_count / total_case_reports) * 100 if total_case_reports > 0 else 0
+        print(f"\n✅ AI Training Readiness (Category 1: Safe List):")
+        print(f"   Total Usable: {safe_count:,} / {total_case_reports:,} ({safe_pct:.1f}%)")
+
+        # 5. Top 10 Journals (FILTERED)
         print("\n🏥 Top 10 Journals (Case Reports Only):")
         df_journals = pd.read_sql_query("""
             SELECT journal, COUNT(*) as count 
@@ -110,15 +138,15 @@ def run_statistics():
             percentage = (row['count'] / total_case_reports) * 100 if total_case_reports > 0 else 0
             print(f"  {i+1:2}. {journal_name:<45} | {row['count']:>6,}  ({percentage:>5.1f}%)")
             
-        # 5. Top 5 Years (FILTERED)
-        print("\n📅 Top 5 Publication Years (Case Reports Only):")
+        # 6. Top 10 Years (FILTERED)
+        print("\n📅 Top 10 Publication Years (Case Reports Only):")
         df_years = pd.read_sql_query("""
             SELECT year, COUNT(*) as count 
             FROM publications 
             WHERE year IS NOT NULL AND category = 'Case Report'
             GROUP BY year 
             ORDER BY count DESC 
-            LIMIT 5
+            LIMIT 10
         """, conn)
 
         for i, row in df_years.iterrows():
