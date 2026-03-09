@@ -1,7 +1,331 @@
-⚠️ [ID: 769] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'oncological_rarity')
+⚠️ [pmc_id: 1190221] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'oncological_rarity')
 Raw Output: {
   "category": "Case Report",
   "is_case_report": true,
   "rarity_level": "oncological_rarity",
-  "reasoning": "The abstract describes a rare case of perianal mucinous adenocarcinoma occurring after Crohn's disease proctocolectomy, which is considered an oncological rarity."
+  "reasoning": "The abstract describes a rare case of mucinous adenocarcinoma that developed in the perianal region after a proctocolectomy for Crohn's disease, which is an oncological rarity."
+}
+⚠️ [ID: 15572] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The abstract describes a case of multiple neural tube defects that contradicts the established "zipper model" of neural tube closure, which is considered extremely rare and novel."
+}
+⚠️ [ID: 19123] Parse Error. Skipping record. Raw Output: {
+  "category": "Other",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract discusses a specific case where clozapine was reinitiated after a "red result" following chemotherapy, but it does not fit into the 'Case Report' category as it lacks detailed information about a single patient or a small group. It is classified under 'Other' because it includes discussions about medical practices and clinical decisions rather than a detailed study of a single patient or a small group of patients."
+}
+⚠️ [pmc_id: 3906656] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The abstract describes two cases of a rare presentation of unicystic ameloblastoma, which is not a known extremely rare condition but rather an uncommon variant that mimics a periapical lesion."
+}
+⚠️ [pmc_id: 4735540] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The abstract describes a case of bilateral elastofibroma dorsi, which is a rare condition, but it is not described as extremely rare or first-of-its-kind."
+}
+⚠️ [pmc_id: 4949807] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon but not unprecedented')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon but not unprecedented",
+  "reasoning": "The case describes a young morbidly obese patient with achalasia, which is uncommon but not historically associated with morbid obesity. The presentation is unique because the patient is 23 years old, which is atypical for achalasia."
+}
+⚠️ [pmc_id: 5400326] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon but not unprecedented')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon but not unprecedented",
+  "reasoning": "The abstract describes a rare case of lymphoplasmacytic lymphoma occurring in the cerebellopontine angle region, which is uncommon but not first-of-its-kind, making it fit the 'uncommon but not unprecedented' category."
+}
+⚠️ [ID: 49928] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "atypical_presentation",
+  "reasoning": "The abstract describes a unique case of a mandibular second molar with an "Y-" and "J-" shaped root canal anatomy that has never been reported before, making it an atypical presentation."
+}
+⚠️ [pmc_id: 5674852] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The case describes a relatively uncommon presentation of sigmoid volvulus in a child, which is not a first-of-its-kind report, a completely novel manifestation of a known disease, or a highly bizarre anatomical variant."
+}
+⚠️ [pmc_id: 5723176] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The abstract describes an uncommon presentation of a common benign tumor in a child, which fits the description of an untypical case of a known condition."
+}
+⚠️ [pmc_id: 6358364] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The abstract describes a case of multifocal choroiditis and panuveitis (MCP) that is uncommon but not unprecedented, as the condition is described as 'uncommon uveitis with multiple inflammatory chorioretinal lesions'. The presentation of the case, though specific, is not considered extremely rare."
+}
+⚠️ [ID: 73301] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The title mentions 'Letter to the Editor Regarding "Intraneural Ewing Sarcoma of Fibular Nerve": Case Report, Radiologic Findings and Review of Literature". This clearly indicates it is a case report of a very rare and unique presentation of the condition."
+}
+⚠️ [pmc_id: 6745799] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The case describes a rare event (vasospasm and delayed cerebral ischemia after an uneventful clipping of an unruptured intracranial aneurysm), which fits the description of an uncommon but not unprecedented presentation."
+}
+⚠️ [pmc_id: 6921555] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_bizarre')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_bizarre",
+  "reasoning": "The abstract describes a case of dermatofibrosarcoma protuberans (DFSP) in the breast, which is uncommon and has a unique presentation."
+}
+⚠️ [ID: 83135] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The abstract describes a case of malignant hyperthermia in a child that is described as 'a first-of-its-kind' report, a completely novel manifestation of a known disease, or a highly bizarre anatomical variant.'
+}"
+⚠️ [pmc_id: 7212454] Invalid LLM Output. Skipping. (Got category: 'Systematic Review', rarity: 'NA')
+Raw Output: {
+  "category": "Systematic Review",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract describes a systematic review focusing on a broad topic related to gastrointestinal symptoms in patients with eating disorders. It does not focus on a single case or a very small group of cases, nor does it present new findings about a rare condition or unreported complications."
+}
+⚠️ [pmc_id: 7507568] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'ultrarare_disease')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "ultrarare_disease",
+  "reasoning": "The abstract describes two cases of neonatal multiple sulfatase deficiency caused by a novel SUMF1 mutation, which is described as an 'ultrarare' condition."
+}
+⚠️ [pmc_id: 8378139] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon but not unprecedented')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon but not unprecedented",
+  "reasoning": "The abstract describes a relatively uncommon clinical scenario of an ectopic pregnancy, which is not considered epidemiologically rare, but the presentation is described as a 'classic case' suggesting an unruptured ectopic pregnancy with an unexpected finding of a dermoid cyst, which is an atypical presentation."
+}
+⚠️ [pmc_id: 8562220] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The abstract describes a case report of a 38-year-old man with massive hemoptysis secondary to pulmonary vein stenosis after radiofrequency ablation for atrial fibrillation. This is not a previously reported condition and presents with uncommon features, making it an atypical presentation."
+}
+⚠️ [pmc_id: 8188864] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The abstract describes a case of Platypnea and Orthodeoxia Syndrome (POS) in an elderly patient, which is presented as a rare clinical condition. The presentation of the syndrome in this particular patient, including the specific anatomical findings and the unusual clinical course, does not make it an unprecedented case, but it is still uncommon."
+}
+⚠️ [ID: 119318] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "atypical_presentation",
+  "reasoning": "The abstract describes a child with "pure" autoimmune epilepsy, which is an uncommon condition but not described as extremely rare or first-of-its-kind."
+}
+⚠️ [pmc_id: 8908468] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon but not unprecedented')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon but not unprecedented",
+  "reasoning": "The abstract describes a case of elephantiasis nostras, a known condition, but presents a treatment regimen that resulted in significant improvement. The case does not present any novel or rare elements beyond the typical presentation and treatment."
+}
+⚠️ [pmc_id: 8921263] Invalid LLM Output. Skipping. (Got category: 'Systematic Review', rarity: 'NA')
+Raw Output: {
+  "category": "Systematic Review",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract describes a meta-analysis on peripheral physiological markers of the heart and gut in children with ADHD. This falls under the category of a systematic review as it aggregates and analyzes multiple case studies."
+}
+⚠️ [ID: 133960] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "atypical_presentation",
+  "reasoning": "The abstract describes a case of a vesicovaginal fistula caused by a lobular capillary hemangioma, which is a relatively uncommon condition, especially in a non-standard presentation (vaginal "tearing" sensation during micturition)."
+}
+⚠️ [ID: 143705] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The title mentions 'Withdrawal Emergent Recurrent Manic Episodes with Use of "Bhukki"', which indicates an extremely rare and unique presentation of a known condition."
+}
+⚠️ [pmc_id: 9483008] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'ultra_rare_disease')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "ultra_rare_disease",
+  "reasoning": "The abstract describes a case of Ogden syndrome, which is described as being diagnosed in less than 10 patients worldwide, indicating it is extremely rare."
+}
+⚠️ [pmc_id: 9550440] Invalid LLM Output. Skipping. (Got category: 'Clinical Trial', rarity: 'NA')
+Raw Output: {
+  "category": "Clinical Trial",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract describes a clinical trial involving a large number of participants (152 patients) and compares different treatment groups, which fits the description of a 'Clinical Trial' or 'Group Study'."
+}
+⚠️ [pmc_id: 9557792] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_presentation",
+  "reasoning": "The abstract describes a rare presentation of laryngeal tuberculosis, which is the most common cause of laryngeal granuloma, and does not fit the criteria for a rare disease or an unprecedented presentation."
+}
+⚠️ [pmc_id: 11373036] Invalid LLM Output. Skipping. (Got category: 'Anesthesiology, Pain Management', rarity: 'atypical_presentation')
+Raw Output: {
+  "category": "Anesthesiology, Pain Management",
+  "is_case_report": true,
+  "rarity_level": "atypical_presentation",
+  "reasoning": "The abstract describes a case of a cervical spinal cord stimulator trial complicated by an epidural abscess, which is an uncommon complication but not unprecedented. It does not involve a disease or condition that is epidemiologically rare."
+}
+⚠️ [pmc_id: 9887667] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The case report describes a relatively uncommon presentation of cardiac sarcoidosis that precedes more common symptoms, which fits the description of an untypical but not unprecedented case."
+}
+⚠️ [pmc_id: 9899761] Invalid LLM Output. Skipping. (Got category: 'Systematic Review', rarity: 'NA')
+Raw Output: {
+  "category": "Systematic Review",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract describes a systematic review that aims to investigate the dosages of swallowing exercises reported in intervention studies on post-stroke dysphagia. It does not focus on a single case or a small group of cases, nor does it describe a rare condition or an unprecedented presentation."
+}
+⚠️ [pmc_id: 9947272] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon but not unprecedented')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon but not unprecedented",
+  "reasoning": "The abstract describes a rare case of right-sided blunt diaphragmatic injury (BDI) leading to hemothorax, which was confirmed by exploratory thoracoscopy with an artificial pneumothorax. The presentation is uncommon but not completely novel, as the injury itself is not extremely rare."
+}
+⚠️ [pmc_id: 9961577] Invalid LLM Output. Skipping. (Got category: 'Systematic Review', rarity: 'NA')
+Raw Output: {
+  "category": "Systematic Review",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract describes a systematic review that pools data from various studies on the genetic composition and phenotypic manifestations of sickle cell disease in the Arab population. It does not meet the criteria for any of the specific case report categories and is clearly a review of existing data."
+}
+⚠️ [pmc_id: 10044089] Invalid LLM Output. Skipping. (Got category: 'Systematic Review', rarity: 'NA')
+Raw Output: {
+  "category": "Systematic Review",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract describes a systematic review of published studies on pharmacological management of cherubism, which fits the definition of a 'Systematic Review'. It does not describe a single case or a small group of cases, nor does it present a new case or a novel presentation of a condition."
+}
+⚠️ [pmc_id: 10106128] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'ultra_rare_disease')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "ultra_rare_disease",
+  "reasoning": "The abstract describes an ultra-rare tumor type with a prevalence of fewer than two per 100,000 people, which clearly classifies it as a rare disease."
+}
+⚠️ [pmc_id: 10167838] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'ultra_rare_disease')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "ultra_rare_disease",
+  "reasoning": "The title mentions 'Hong Kong-A case report series' and the abstract emphasizes the challenge of diagnosing an ultra-rare condition like FOP."
+}
+⚠️ [pmc_id: 10182581] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The abstract describes a case of synovial chondromatosis of the ankle joint, which is an uncommon condition but not described as extremely rare or first-of-its-kind."
+}
+⚠️ [ID: 163361] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The title mentions 'Reply to the Letter to the Editor for "Parsonage-Turner syndrome after SARS-CoV-2 vaccination: A case report"', indicating that this is an exceptionally rare case of Parsonage-Turner syndrome occurring after vaccination, which is a 'first-of-its-kind' report."
+}
+⚠️ [pmc_id: 10580808] Invalid LLM Output. Skipping. (Got category: 'Systematic Review', rarity: 'NA')
+Raw Output: {
+  "category": "Systematic Review",
+  "is_case_report": false,
+  "rarity_level": "NA",
+  "reasoning": "The abstract describes a meta-analysis focusing on pediatric cases of cervical aortic arch, detailing clinical characteristics and treatment outcomes using individual patient data. This aligns with the definition of a systematic review."
+}
+⚠️ [pmc_id: 10599357] Invalid LLM Output. Skipping. (Got category: 'Oncology', rarity: 'unprecedented_presentation')
+Raw Output: {
+  "category": "Oncology",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The abstract describes a rare condition (scapular pseudo-winging caused by ventral osteochondromas) that has been reported in only a handful of cases, making it an 'unprecedented_presentation'."
+}
+⚠️ [pmc_id: 10800718] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_presentation",
+  "reasoning": "The abstract describes an uncommon presentation of a specific type of brainstem glioma in an adult patient, which fits the description of an 'atypical presentation'."
+}
+⚠️ [pmc_id: 10914381] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'very_late_onset')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "very_late_onset",
+  "reasoning": "The abstract describes a very late-onset multiple sclerosis (VLOMS) case, which is defined as an uncommon form of MS, accounting for only 0.5 percent of all MS patients."
+}
+⚠️ [pmc_id: 11177125] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The case describes a unicystic ameloblastoma appearing as a multilocular entity, which is uncommon but not unprecedented, fitting the 'uncommon but not unprecedented' category."
+}
+⚠️ [pmc_id: 11184979] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon but not unprecedented')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon but not unprecedented",
+  "reasoning": "The abstract describes a case of unicuspid aortic valve (UAV), which is a rare congenital anomaly. The case itself is not described as first-of-its-kind or extremely rare, but rather as an uncommon presentation of a known condition."
+}
+⚠️ [ID: 194443] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The abstract describes a case of tracheal necrosis that is described as 'a first-of-its-kind' report, a completely novel manifestation of a known disease.'
+}"
+⚠️ [pmc_id: 11437747] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon but not unprecedented')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon but not unprecedented",
+  "reasoning": "The abstract describes a specific case of severe, unstable grade III slipped capital femoral epiphysis managed by closed reduction percutaneous pinning, which falls under the category of an unstandardized presentation of the condition."
+}
+⚠️ [pmc_id: 11444589] Invalid LLM Output. Skipping. (Got category: 'Case Report', rarity: 'uncommon_but_not_unprecedented_presentation')
+Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "uncommon_but_not_unprecedented_presentation",
+  "reasoning": "The case describes a rare presentation of idiopathic unilateral complete oculomotor nerve palsy, which is uncommon but not unheard of, fitting the description of an untypical but not completely novel manifestation of a known disease."
+}
+⚠️ [ID: 211780] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The abstract describes a rare congenital condition (dextrocardia) combined with a rare cardiac arrhythmia (atrial fibrillation). The combination is described as extremely rare, and the case report emphasizes that no cases have been reported before of performing the "one-stop" procedure on a patient with both conditions."
+}
+⚠️ [ID: 213407] Parse Error. Skipping record. Raw Output: {
+  "category": "Case Report",
+  "is_case_report": true,
+  "rarity_level": "unprecedented_presentation",
+  "reasoning": "The abstract describes a case of emphysematous cholecystitis, which is described as a rare and rapidly progressive disease. The case is also novel in presenting a "champagne sign" on POCUS, which adds a unique element to the report."
 }

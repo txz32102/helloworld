@@ -137,7 +137,7 @@ def run_filter(args):
 
         # 2. Validate Categories
         if category not in VALID_CATEGORIES or rarity_level not in VALID_RARITIES:
-            error_msg = f"⚠️ [ID: {rec['id']}] Invalid LLM Output. Skipping. (Got category: '{category}', rarity: '{rarity_level}')\nRaw Output: {raw_output}"
+            error_msg = f"⚠️ [pmc_id: {rec['pmc_id']}] Invalid LLM Output. Skipping. (Got category: '{category}', rarity: '{rarity_level}')\nRaw Output: {raw_output}"
             print(f"\n{error_msg}")
             log_file.write(error_msg + "\n")
             log_file.flush() # Ensure it writes to disk immediately
@@ -166,7 +166,7 @@ def run_filter(args):
                 out_conn.commit()
                 
         except sqlite3.Error as e:
-            db_err_msg = f"❌ [ID: {rec['id']}] DB Insert Error: {e}"
+            db_err_msg = f"❌ [pmc_id: {rec['pmc_id']}] DB Insert Error: {e}"
             print(f"\n{db_err_msg}")
             log_file.write(db_err_msg + "\n")
             log_file.flush()

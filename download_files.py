@@ -95,7 +95,7 @@ def main():
     # Updated default DB path
     parser.add_argument("--db", type=str, default="data/llm_filtered.db")
     parser.add_argument("--out", type=str, default="data/download_files")
-    parser.add_argument("--limit", type=int, default=3000)
+    parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--workers", type=int, default=8) 
     parser.add_argument("--seed", type=int, default=42)
     args = parser.parse_args()

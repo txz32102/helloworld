@@ -87,7 +87,7 @@ Epilepsy is a chronic neurological disorder that is characterized by episodes of
 To identify case reports from the massive PMC archive, we employ LLM (qwen2.5-3b) to analyze the retrieved titles and abstracts, and we filter out different levels of case report. We use 24GB 4090 with a bs of 64, you may need to adjust the batch size depending on your GPU memory. Run the filtering script to process the database:
 
 ```bash
-# you may read this script's prompt to have a quick view of what we classify
+# you may read this script's prompt to have a quick view of what we classify (line 85 ~ line 106)
 python3 llm_filter.py
 ```
 
