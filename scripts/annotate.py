@@ -8,10 +8,10 @@ import uvicorn
 app = FastAPI()
 
 # --- CONFIGURATION ---
-DATA_ROOT = "data/download_files"
-PROGRESS_FILE = "log/progress.txt"
+DATA_ROOT = "../data/download_files"
+PROGRESS_FILE = "../log/progress.txt"
 
-os.makedirs("log", exist_ok=True)
+os.makedirs("../log", exist_ok=True)
 
 # Mount the root data folder
 app.mount("/data_root", StaticFiles(directory=DATA_ROOT), name="data_root")
