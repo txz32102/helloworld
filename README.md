@@ -1,6 +1,6 @@
 # Case Report Benchmark Pipeline
 
-A multi-stage, LLM-powered pipeline designed to evaluate the capability of multimodal Vision-Language Models (VLMs) in synthesizing, generating, and evaluating clinical case reports.
+A multi-stage, LLM-powered pipeline designed to evaluate the capability of multimodal Vision-Language Models (VLMs) in extracting, generating, and evaluating clinical case reports.
 
 ## Overview
 
