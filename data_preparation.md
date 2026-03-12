@@ -166,9 +166,9 @@ python3 preprocessing/download_files.py
 We write a simple script using a web application to choose the gold standard 1,000 case reports from `data/download_files` (a subset of case reports downloaded with `preprocessing/download_files.py` from the years 2020–2026).
 
 ```bash
-python3 annotate.py
+python3 scripts/annotate.py
 ```
 
 The web page look like this:![alt text](imgs/web_page.png)
 
-The results is saved at `log/progress.txt`.
+The results is saved at `log/annotate/progress.txt`.

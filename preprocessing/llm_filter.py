@@ -45,8 +45,8 @@ def run_filter(args):
     print(f"📤 Output DB: {args.out_db}")
     
     # --- LOGGING SETUP ---
-    os.makedirs("log", exist_ok=True)
-    log_file_path = os.path.join("log", "skipped_records.log")
+    os.makedirs("log/preprocessing", exist_ok=True)
+    log_file_path = os.path.join("log/preprocessing", "skipped_records.log")
     
     # Initialize Pipeline
     pipe = pipeline(

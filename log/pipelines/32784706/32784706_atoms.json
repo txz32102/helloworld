@@ -1,0 +1,41 @@
+{
+  "history": [
+    "57-year-old woman diagnosed with a pituitary macroadenoma",
+    "History of urticaria caused by pollen and Computed Tomography contrast agent"
+  ],
+  "presentation": [
+    "Immediately after administration of rocuronium, pulse rate increased to 120 beats/min and blood pressure dropped to 77/36 mmHg",
+    "Generalized urticaria and tongue edema were observed"
+  ],
+  "diagnostics": [
+    "Rocuronium confirmed as the cause by skin prick test four days after the episode",
+    "Cisatracurium showed a negative reaction in the skin prick test"
+  ],
+  "management": [
+    "Epinephrine was administered and the surgery was postponed",
+    "Reoperation was planned two weeks after the event",
+    "Cisatracurium was selected as an alternative agent for future procedures"
+  ],
+  "outcome": [
+    "Patient underwent reoperation without any adverse events",
+    "Patient was discharged without any complications 7 days later"
+  ],
+  "metadata": {
+    "folder_id": "32784706",
+    "original_xml_path": "demo_data/32784706/PMC7466250.1.xml",
+    "source_directory": "demo_data/32784706",
+    "optional_sections_requested": [
+      "authors",
+      "year",
+      "figures",
+      "tables",
+      "citations"
+    ],
+    "paper_sections_found": [
+      "1. Introduction",
+      "2. Case Presentation",
+      "3. Discussion",
+      "4. Conclusions"
+    ]
+  }
+}

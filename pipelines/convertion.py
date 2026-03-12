@@ -223,7 +223,7 @@ class PMCArticleMDGenerator:
         print(f"✅ Successfully saved Ground Truth Markdown to: {self.output_path}\n")
 
 
-class ConversionPipeline:
+class XMLConversionPipeline:
     def __init__(self, data_dir: str, out_dir: str):
         """
         Initializes the pipeline to convert PMC XML to Ground Truth Markdown.
@@ -267,22 +267,3 @@ class ConversionPipeline:
                 
         print("-" * 40)
         print("Batch ground-truth conversion complete.")
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Convert PMC XML to Ground Truth Markdown.")
-    parser.add_argument("--data_dir", type=str, default="/home/data1/musong/workspace/2026/03/07/helloworld/data",
-                        help="The base directory containing the original PMC case folders with XMLs.")
-    parser.add_argument("--out_dir", type=str, default="/home/data1/musong/workspace/2026/03/07/helloworld/log/generated",
-                        help="The output directory to save the generated markdown files.")
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    args = parse_args()
-    pipeline = ConversionPipeline(
-        data_dir=args.data_dir,
-        out_dir=args.out_dir
-    )
-    
-    pipeline.run()

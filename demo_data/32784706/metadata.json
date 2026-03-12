@@ -1,0 +1,28 @@
+{
+    "id": 92035,
+    "file_path": "oa_package/e7/71/PMC7466250.tar.gz",
+    "journal": "Medicina (Kaunas)",
+    "pub_date": "2020 Aug 7",
+    "year": 2020,
+    "volume": "56(8)",
+    "pages": "394",
+    "pmc_id": 7466250,
+    "pmid": 32784706,
+    "license": "CC BY",
+    "title": "Early Skin Test after Anaphylaxis during Induction of Anesthesia: A Case Report.",
+    "abstract": "BACKGROUND: It is recommended that a skin test be performed 4-6 weeks after anaphylaxis. However, there is little evidence about the timing of the skin test when there is a need to identify the cause within 4-6 weeks.\nCASE REPORT: A 57-year-old woman was scheduled to undergo surgery via a sphenoidal approach to remove a pituitary macroadenoma. Immediately after the administration of rocuronium, pulse rate increased to 120 beats/min and blood pressure dropped to 77/36 mmHg. At the same time, generalized urticaria and tongue edema were observed. Epinephrine was administered and the surgery was postponed. Reoperation was planned two weeks after the event. Four days after the anaphylactic episode, rocuronium was confirmed to be the cause by the skin prick test. Cisatracurium, which showed a negative reaction, was selected as an alternative agent for future procedures. Two weeks later, the patient underwent reoperation without any adverse events.\nCONCLUSIONS: The early skin test can be performed if there is a need even earlier than 4-6 weeks after anaphylaxis.",
+    "category": "Case Report",
+    "is_case_report": 1,
+    "rarity_level": "standard_case",
+    "reasoning": "The abstract describes a case of anaphylaxis during anesthesia induction, with a unique presentation where the skin test was performed four days after the event rather than waiting 4-6 weeks. This is a relatively common scenario but presented in an atypical manner.",
+    "raw_response": {
+        "category": "Case Report",
+        "is_case_report": true,
+        "rarity_level": "standard_case",
+        "reasoning": "The abstract describes a case of anaphylaxis during anesthesia induction, with a unique presentation where the skin test was performed four days after the event rather than waiting 4-6 weeks. This is a relatively common scenario but presented in an atypical manner."
+    },
+    "external_links": {
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/32784706/",
+        "aws_s3_prefix": "7466250.1"
+    }
+}

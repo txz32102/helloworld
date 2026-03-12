@@ -7,7 +7,7 @@ from datetime import datetime
 
 from .utils import setup_proxy, get_openai_client, encode_image
 
-class EvaluatorPipeline:
+class EvaluationPipeline:
     def __init__(self, base_dir: str, model_id: str):
         """
         Initializes the pipeline to evaluate generated case reports.
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     # 3. Initialize and run the pipeline
-    evaluator = EvaluatorPipeline(
+    evaluator = EvaluationPipeline(
         base_dir=args.base_dir, 
         model_id=args.model_id
     )

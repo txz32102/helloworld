@@ -21,9 +21,9 @@ SLEEP_TIME = 0.1 if API_KEY else 0.4
 MAX_RETRIES = 3
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
-
+os.makedirs(f"{OUTPUT_DIR}/preprocessing", exist_ok=True)
 # --- Logging Setup ---
-log_file = os.path.join(OUTPUT_DIR, f"crawler_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+log_file = os.path.join(f"{OUTPUT_DIR}/preprocessing", f"crawler_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
