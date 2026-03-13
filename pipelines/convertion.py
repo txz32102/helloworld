@@ -1,9 +1,13 @@
 import os
 import glob
 import re
+import json
 import xml.etree.ElementTree as ET
-import argparse
 import pubmed_parser as pp
+import urllib.parse
+from jinja2 import Template
+from weasyprint import HTML
+import markdown
 
 class PMCArticleParser:
     def __init__(self, file_path):
@@ -223,7 +227,7 @@ class PMCArticleMDGenerator:
         print(f"✅ Successfully saved Ground Truth Markdown to: {self.output_path}\n")
 
 
-class XMLConversionPipeline:
+class MDConversionPipeline:
     def __init__(self, data_dir: str, out_dir: str):
         """
         Initializes the pipeline to convert PMC XML to Ground Truth Markdown.
@@ -267,3 +271,220 @@ class XMLConversionPipeline:
                 
         print("-" * 40)
         print("Batch ground-truth conversion complete.")
+        
+class PDFConversionPipeline:
+    def __init__(self, working_dir: str, fonts_dir: str):
+        """
+        Initializes the pipeline to generate PDFs from Markdown and JSON assets.
+        
+        :param working_dir: Path to the log/pipelines directory containing the article folders.
+        :param fonts_dir: Path to the local fonts directory.
+        """
+        self.working_dir = working_dir
+        self.fonts_dir = fonts_dir
+        
+        self.font_regular_uri = self._get_font_uri("Times New Roman.ttf")
+        self.font_bold_uri = self._get_font_uri("Times New Roman - Bold.ttf")
+        self.template = Template(self._get_html_template())
+
+    def _get_font_uri(self, font_name: str) -> str:
+        """Safely encodes the local font path for CSS consumption."""
+        font_path = os.path.join(self.fonts_dir, font_name)
+        return f"file://{urllib.parse.quote(font_path)}"
+
+    def _get_html_template(self) -> str:
+        """Returns the base Jinja2 HTML template."""
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                @font-face {
+                    font-family: 'LocalTimesNewRoman';
+                    src: url('{{ font_regular_uri }}') format('truetype');
+                    font-weight: normal;
+                    font-style: normal;
+                }
+                @font-face {
+                    font-family: 'LocalTimesNewRoman';
+                    src: url('{{ font_bold_uri }}') format('truetype');
+                    font-weight: bold;
+                    font-style: normal;
+                }
+
+                @page { size: A4; margin: 2cm; }
+                
+                body { 
+                    font-family: 'LocalTimesNewRoman', serif; 
+                    line-height: 1.6; 
+                    color: #333; 
+                    font-size: 12pt; 
+                }
+                
+                h1 { color: #2c3e50; border-bottom: 2px solid #2c3e50; padding-bottom: 5px; }
+                h2, h3 { color: #2c3e50; margin-top: 20px; }
+                
+                pre { 
+                    background-color: #f8f9fa; 
+                    padding: 15px; 
+                    border-radius: 5px; 
+                    font-size: 10pt; 
+                    border: 1px solid #e9ecef; 
+                    white-space: pre-wrap;       
+                    word-wrap: break-word;       
+                    overflow-wrap: break-word;   
+                }
+                code { font-family: Consolas, monospace; }
+                
+                .supplementary-section { page-break-before: always; }
+                
+                .figure-container {
+                    page-break-inside: avoid; /* Keeps image and caption together */
+                    margin: 25px 0;
+                    width: 100%; 
+                    text-align: center;
+                }
+                
+                .figure-container img {
+                    /* Natural scaling: Shrinks if it's too wide, but maintains aspect ratio */
+                    max-width: 100%; 
+                    height: auto; 
+                    
+                    /* A fail-safe max-height so extremely tall images don't break the page, 
+                       but standard images won't be forced to this size */
+                    max-height: 12cm; 
+                    
+                    /* Centering */
+                    display: block;
+                    margin: 0 auto 10px auto;
+                }
+                
+                .figure-container .caption {
+                    text-align: left;
+                    font-size: 11pt;
+                    color: #444;
+                    line-height: 1.4;
+                    margin-top: 8px;
+                    page-break-inside: avoid;
+                }
+            </style>
+        </head>
+        <body>
+            {{ body_html }}
+        </body>
+        </html>
+        """
+        
+    def run(self):
+        """Iterates over the generated pipelines directory and processes each article."""
+        if not os.path.exists(self.working_dir):
+            print(f"[-] Directory not found: {self.working_dir}")
+            return
+
+        print(f"Looking for article directories in: {self.working_dir}")
+        for item in os.listdir(self.working_dir):
+            article_dir = os.path.join(self.working_dir, item)
+            
+            if os.path.isdir(article_dir):
+                self._process_article(item, article_dir)
+                
+        print("-" * 40)
+        print("Batch PDF generation complete.")
+
+    def _process_article(self, article_id: str, article_dir: str):
+        """Processes an individual article into a PDF."""
+        print(f"Processing PDF for Article ID: {article_id}...")
+        
+        # 1. Define specific file paths based on new tree structure
+        generated_md_path = os.path.join(article_dir, f"{article_id}_generated.md")
+        eval_md_path = os.path.join(article_dir, f"{article_id}_evaluation.md")
+        json_path = os.path.join(article_dir, f"{article_id}_atoms.json")
+        pdf_out_path = os.path.join(article_dir, f"{article_id}_report.pdf")
+
+        # 2. Check for the core generated markdown file
+        if not os.path.exists(generated_md_path):
+            print(f"  ⚠️ Skipping {article_id}: {generated_md_path} not found.")
+            return
+
+        # 3. Read Core Assets
+        with open(generated_md_path, 'r', encoding='utf-8') as f:
+            md_content = f.read()
+
+        # 4. Process Images in the main content
+        md_content = self._process_images(md_content, article_dir)
+
+        # 5. Build the Supplementary Section
+        md_content += "\n\n<div class='supplementary-section'></div>\n\n"
+        md_content += "---\n\n# Supplementary Material\n\n"
+
+        # Append Evaluation MD if it exists
+        if os.path.exists(eval_md_path):
+            with open(eval_md_path, 'r', encoding='utf-8') as f:
+                eval_content = f.read()
+            md_content += eval_content + "\n\n"
+        else:
+            print(f"  ℹ️ Notice: No evaluation file found for {article_id}.")
+
+        # Append JSON metadata if it exists
+        if os.path.exists(json_path):
+            with open(json_path, 'r', encoding='utf-8') as f:
+                json_data = json.load(f)
+            md_content += "### Execution Atoms (JSON)\n\n"
+            md_content += "```json\n" + json.dumps(json_data, indent=2) + "\n```\n"
+        else:
+            print(f"  ℹ️ Notice: No atoms JSON file found for {article_id}.")
+
+        # 6. Convert to HTML and Render Jinja
+        raw_html = markdown.markdown(md_content, extensions=['fenced_code', 'tables'])
+        final_html = self.template.render(
+            body_html=raw_html,
+            font_regular_uri=self.font_regular_uri,
+            font_bold_uri=self.font_bold_uri
+        )
+
+        # 7. Generate PDF
+        try:
+            HTML(string=final_html, base_url=article_dir).write_pdf(pdf_out_path)
+            print(f"  ✅ Success! Saved to: {pdf_out_path}\n")
+        except Exception as e:
+            print(f"  ❌ Failed to generate PDF for {article_id}. Error: {e}\n")
+
+    def _process_images(self, md_content: str, article_dir: str) -> str:
+        """Parses explicitly defined Markdown images and their captions to build HTML figures."""
+        
+        def replace_with_figure(match):
+            alt_text = match.group(1)      # e.g., Fig. 1
+            img_rel_path = match.group(2)  # e.g., imgs/10014_2020_365_Fig1_HTML.jpg
+            caption_prefix = match.group(3) # e.g., Fig. 1:
+            caption_text = match.group(4)   # e.g., Radiological findings...
+            
+            # Clean up trailing colons in the prefix if they got caught inside the bold tags
+            caption_prefix = caption_prefix.strip(" :")
+            
+            # Extract just the filename and build the absolute local path
+            img_basename = os.path.basename(img_rel_path)
+            img_path = os.path.abspath(os.path.join(article_dir, "imgs", img_basename))
+            
+            # Safely encode the URI for WeasyPrint
+            img_uri = f"file://{urllib.parse.quote(img_path)}"
+            
+            # Construct the custom HTML block
+            return (
+                f'<div class="figure-container">\n'
+                f'  <img src="{img_uri}" alt="{alt_text}" />\n'
+                f'  <div class="caption"><strong>{caption_prefix}:</strong> {caption_text}</div>\n'
+                f'</div>\n'
+            )
+
+        # Robust Regex Pattern Explanation:
+        # 1. !\[([^\]]*)\]\(([^)]+)\)  -> Matches ![alt_text](path/to/img)
+        # 2. \s* -> Matches ANY whitespace or newlines between image and caption
+        # 3. (?:>\s*)?                -> Optionally matches a blockquote marker "> "
+        # 4. \*\*([^*]+)\*\* -> Matches **Caption Prefix**
+        # 5. \s*:?\s* -> Matches optional colons/spaces after the bold text
+        # 6. (.*)                     -> Matches the rest of the caption text
+        
+        pattern = r'!\[([^\]]*)\]\(([^)]+)\)\s*(?:>\s*)?\*\*([^*]+)\*\*\s*:?\s*(.*)'
+        
+        return re.sub(pattern, replace_with_figure, md_content)

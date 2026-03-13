@@ -1,32 +1,38 @@
-# Title: Diffuse Midline Glioma with H3 K27M Mutation in the Cervical Spinal Cord: A Case Report
+# Title: Intradural Intramedullary Diffuse Midline Glioma of the Cervical Spine: A Case Report and Review of the Literature
 
 ## Abstract
-This case report details a 28-year-old male presenting with neck and shoulder pain, dysesthesia of all four limbs, and hypesthesia of both hands. MRI revealed an intradural, intramedullary mass in the cervical spinal cord. Histological and molecular analyses confirmed a diagnosis of diffuse midline glioma with H3 K27M mutation. The patient underwent surgical resection and radiochemotherapy. This case underscores the importance of integrating advanced molecular diagnostics in the management of spinal cord tumors, highlighting the unique presentation and therapeutic challenges associated with diffuse midline gliomas.
+This case report details a 28-year-old male presenting with neck and shoulder pain, dysesthesia of all four limbs, and hypesthesia of both hands, with no motor deficits. Imaging revealed an intradural, intramedullary mass in the cervical spinal cord spanning C2–C6. Histological and molecular analyses confirmed a diffuse midline glioma with H3F3A K27M, TERT C228T, and PDGFRα Y849C mutations. Surgical resection and radiochemotherapy were administered. Postoperative MRI showed partial resection, and the patient experienced gradual improvement in sensorimotor function. This case underscores the complexity of managing spinal cord gliomas and highlights the importance of molecular diagnostics in guiding treatment.
 
 ## Introduction
-Diffuse midline gliomas, particularly those with the H3 K27M mutation, represent a distinct and aggressive category of central nervous system tumors primarily affecting children but also seen in adults. These tumors are characterized by their midline location, often involving the thalamus, brainstem, and spinal cord, and are associated with poor prognosis. The H3 K27M mutation is a hallmark of these tumors, leading to epigenetic dysregulation and aggressive tumor behavior. Understanding the clinical presentation, diagnostic challenges, and therapeutic approaches is crucial for managing these complex cases.
+Diffuse midline gliomas are aggressive tumors primarily affecting children, but they can occur in adults, albeit rarely. These tumors are characterized by a specific H3 K27M mutation and are classified as WHO grade IV due to their poor prognosis and infiltrative nature. The incidence of spinal cord involvement is uncommon, and presentation often includes sensory and motor deficits depending on the tumor's location. This report presents a unique case of a cervical spinal cord diffuse midline glioma in an adult, contributing to the limited literature on adult presentations and management strategies.
 
 ## Clinical Summary
-A 28-year-old male presented with persistent neck and shoulder pain, accompanied by dysesthesia of all four limbs and hypesthesia of both hands. Neurological examination revealed no motor deficits. MRI of the cervical spine demonstrated an intradural, intramedullary mass extending from C2 to C6, measuring 6.4 cm in length and 1.7 cm in diameter. The lesion appeared inhomogeneous and hyperintense on T2-weighted imaging, with syringomyelia extending from C6/7 to T1/2. T1-weighted imaging showed iso- to hypointense signals with mild to moderate contrast enhancement (Figure 1).
+A 28-year-old male presented with progressive neck and shoulder pain, dysesthesia in all four limbs, and hypesthesia of both hands. Neurological examination revealed no motor deficits. MRI of the cervical spine revealed a 6.4 cm intradural, intramedullary mass from C2 to C6, with syringomyelia extending from C6/7 to T1/2 (Figure 1).
 
 ![Figure 1](imgs/10014_2020_365_Fig1_HTML.jpg)
-> **Figure 1:** Sagittal and axial T2-weighted MRI images showing an inhomogeneous, hyperintense lesion in the cervical spinal cord with associated syringomyelia.
+> **Figure 1:** Sagittal and axial T2-weighted MRI images showing a hyperintense lesion in the cervical spinal cord from C2 to C6, indicative of an intramedullary mass with associated syringomyelia.
 
 ## Pathological Findings
-Histological examination revealed pleomorphic glial tumor cells, mitoses, calcifications, and atypical ganglioid cells. Immunohistochemistry showed positivity for GFAP, retained ATRX expression, and absence of IDH1 R132H mutant protein. Tumor cells were negative for EMA, while ganglionic cells expressed synaptophysin. Some tumor cells were CD34 positive. Notably, the presence of the histone H3.3 K27M mutant protein was confirmed in the nuclei of tumor cells, with a Ki67 index of 20% indicating a high proliferative rate. Molecular analysis identified H3F3A K27M, TERT C228T, and PDGFRα Y849C mutations. Methylation profiling corroborated the diagnosis of diffuse midline glioma (Figure 2).
+Histological examination revealed pleomorphic glial tumor cells, mitoses, calcifications, and atypical ganglioid cells. Immunohistochemistry showed positive staining for GFAP and ATRX, with a high Ki-67 index, confirming high proliferative activity (Figure 2). Molecular analysis identified H3F3A K27M, TERT C228T, and PDGFRα Y849C mutations, consistent with a diffuse midline glioma classification.
 
 ![Figure 2](imgs/10014_2020_365_Fig2_HTML.jpg)
-> **Figure 2:** Histological and immunohistochemical analysis showing pleomorphic tumor cells with GFAP positivity and strong nuclear expression of H3 K27M mutant protein.
+> **Figure 2:** Histological sections showing pleomorphic glial cells with positive GFAP and ATRX staining, and a high Ki-67 index, indicative of a high-grade glioma.
+
+Methylation profiling confirmed the diagnosis of diffuse midline glioma with a high confidence score (Figure 3).
+
+![Figure 3](imgs/10014_2020_365_Fig3_HTML.jpg)
+> **Figure 3:** Molecular profiling illustrating the presence of H3F3A K27M, TERT C228T, and PDGFRα Y849C mutations, and methylation class consistent with diffuse midline glioma.
 
 ## Discussion
-This case exemplifies the clinical and molecular complexity of diffuse midline gliomas with H3 K27M mutation. The patient's presentation with sensory deficits and absence of motor impairment is atypical, as these tumors often present with significant neurological deficits due to their midline location. The integration of advanced imaging and molecular diagnostics was pivotal in establishing the diagnosis, guiding therapeutic decisions, and prognosticating outcomes.
+This case highlights the rare occurrence of diffuse midline glioma in the cervical spinal cord of an adult. The clinical presentation was atypical, with predominant sensory symptoms and absence of motor deficits, differing from the more common presentations involving significant motor impairment. The presence of the H3 K27M mutation is a hallmark of these tumors, guiding both diagnosis and treatment strategies.
 
-Surgical resection, although challenging due to the tumor's location and infiltrative nature, remains a cornerstone of management. In this case, laminoplasty from C2 to C6 facilitated partial resection. Intraoperative neurophysiological monitoring was employed to minimize neurological damage. Postoperative management included radiochemotherapy with Temozolomide, following the STUPP protocol, and targeted radiotherapy to residual tumor and high-risk areas.
+Surgical intervention aimed at maximal safe resection is the cornerstone of management, although complete resection is often unachievable due to the infiltrative nature of these tumors. In this case, partial resection was achieved, with postoperative MRI confirming minimal residual disease. Concomitant radiochemotherapy, following the STUPP protocol, was employed to address the residual tumor burden.
 
-The presence of the H3 K27M mutation signifies a poor prognosis, with limited therapeutic options beyond standard chemoradiotherapy. Recent studies suggest potential benefits from targeted therapies and immunotherapy, although their efficacy remains under investigation. This case highlights the necessity for ongoing research into novel therapeutic strategies and the potential role of personalized medicine in improving outcomes for patients with diffuse midline gliomas.
+The molecular characterization of the tumor provided critical insights into its aggressive nature and informed the treatment approach. The identification of specific mutations, such as H3F3A K27M, has prognostic implications and underscores the necessity for molecular diagnostics in the management of spinal cord gliomas.
+
+This case contributes to the growing body of literature on adult diffuse midline gliomas, emphasizing the need for continued research into targeted therapies and the role of molecular profiling in personalizing treatment plans.
 
 ## References
 1. Louis DN, Perry A, Reifenberger G, et al. The 2016 World Health Organization Classification of Tumors of the Central Nervous System: a summary. Acta Neuropathol. 2016;131(6):803-820.
-2. Khuong-Quang DA, Buczkowicz P, Rakopoulos P, et al. K27M mutation in histone H3.3 defines clinically and biologically distinct subgroups of pediatric diffuse intrinsic pontine gliomas. Acta Neuropathol. 2012;124(3):439-447.
-3. Jones C, Baker SJ. Unique genetic and epigenetic mechanisms driving paediatric diffuse high-grade glioma. Nat Rev Cancer. 2014;14(10):651-661.
-4. Cohen KJ, Jabado N, Grill J. Diffuse intrinsic pontine gliomas—current management and new biologic insights. Is there a glimmer of hope? Neuro Oncol. 2017;19(8):1025-1034.
+2. Sturm D, Witt H, Hovestadt V, et al. Hotspot mutations in H3F3A and IDH1 define distinct epigenetic and biological subgroups of glioblastoma. Cancer Cell. 2012;22(4):425-437.
+3. Jones C, Karajannis MA, Jones DTW, et al. Pediatric high-grade glioma: biologically and clinically in need of new thinking. Neuro Oncol. 2017;19(2):153-161.

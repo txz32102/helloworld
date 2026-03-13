@@ -2,7 +2,8 @@ from pipelines.utils import setup_proxy
 from pipelines.extraction import AtomsExtractorPipeline
 from pipelines.generation import GenerationPipeline
 from pipelines.evaluation import EvaluationPipeline
-from pipelines.convertion import XMLConversionPipeline
+from pipelines.convertion import MDConversionPipeline
+from pipelines.convertion import PDFConversionPipeline
 
 PROXY = "http://127.0.0.1:7890"
 setup_proxy(PROXY)
@@ -27,14 +28,20 @@ generator = GenerationPipeline(
 )
 generator.run()
 
-converter = XMLConversionPipeline(
+md_converter = MDConversionPipeline(
     data_dir=data_dir,
     out_dir=out_dir
 )
-converter.run()
+md_converter.run()
 
 evaluator = EvaluationPipeline(
     base_dir=out_dir, 
     model_id="gpt-4o"
 )
 evaluator.run()
+
+pdf_converter = PDFConversionPipeline(
+    working_dir=out_dir,
+    fonts_dir="fonts"
+)
+pdf_converter.run()
