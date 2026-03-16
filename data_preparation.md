@@ -11,7 +11,7 @@ Our primary data source is the PubMed Central (PMC) Open Access (OA) subset. We 
 ### Step 1: Download Files
 
 Access the pre-processed data via the Google Drive link below:
-👉 **[Download Pre-processed Data](https://drive.google.com/drive/folders/1mT9b6NhcuxPMTQSvm0WSqFtExSoADJP3?usp=sharing)** (30GB)
+👉 **[Download Pre-processed Data](https://drive.google.com/drive/folders/1TEiAqlpF1APWmXyPjpNwlilDalDwJ-_c?usp=sharing)** (~20GB)
 
 ### Step 2: Setup Directory
 
@@ -19,7 +19,7 @@ Place the downloaded files into a directory named `./data` at the root of the pr
 
 ```text
 data/
-├── download_files.zip       # Contains ~3000 PDFs with XML, images, and metadata
+├── download_files.zip       # Contains ~444 PDFs with XML, images, and metadata (after 2026 Feb)
 ├── keyword_filtered.db
 ├── llm_filtered.db
 ├── oa_file_list.txt
@@ -159,16 +159,14 @@ python3 preprocessing/read_llm_filtered_db.py
 We can use the filtered database to download the pdf files of case reports.
 ```bash
 python3 preprocessing/download_files.py
+
+# or you may download the latest case reports
+# python3 preprocessing/download_latest.py
 ```
 
-## 5. Choose the golden standard 1k case reports
+## 5. Update the data
 
-We write a simple script using a web application to choose the gold standard 1,000 case reports from `data/download_files` (a subset of case reports downloaded with `preprocessing/download_files.py` from the years 2020–2026).
-
+Since `data/oa_file_list.txt` is frequently updated, the database must be synchronized accordingly.
 ```bash
-python3 scripts/annotate.py
+python3 preprocessing/update_db.py
 ```
-
-The web page look like this:![alt text](imgs/web_page.png)
-
-The results is saved at `log/annotate/progress.txt`.

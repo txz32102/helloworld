@@ -4,7 +4,7 @@ import random
 
 # --- Configuration ---
 # You can change this path to any of your year-specific databases
-DB_PATH = "data/title_abstract_db/pub_abstracts_2025.db"
+DB_PATH = "data/title_abstract_db/pub_abstracts_2026.db"
 
 def read_samples(db_path, seed=42, sample_size=5):
     if not os.path.exists(db_path):

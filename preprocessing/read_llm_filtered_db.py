@@ -138,15 +138,15 @@ def run_statistics():
             percentage = (row['count'] / total_case_reports) * 100 if total_case_reports > 0 else 0
             print(f"  {i+1:2}. {journal_name:<45} | {row['count']:>6,}  ({percentage:>5.1f}%)")
             
-        # 6. Top 10 Years (FILTERED)
-        print("\n📅 Top 10 Publication Years (Case Reports Only):")
+        # 6. Top 20 Years (FILTERED)
+        print("\n📅 Top 20 Publication Years (Case Reports Only):")
         df_years = pd.read_sql_query("""
             SELECT year, COUNT(*) as count 
             FROM publications 
             WHERE year IS NOT NULL AND category = 'Case Report'
             GROUP BY year 
             ORDER BY count DESC 
-            LIMIT 10
+            LIMIT 20
         """, conn)
 
         for i, row in df_years.iterrows():

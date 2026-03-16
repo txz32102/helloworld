@@ -1,0 +1,23 @@
+{
+    "id": 245187,
+    "file_path": "oa_package/b1/9c/PMC12912920.tar.gz",
+    "journal": "Clin Case Rep",
+    "pub_date": "2026 Feb 17",
+    "year": 2026,
+    "volume": "14(2)",
+    "pages": "e72058",
+    "pmc_id": 12912920,
+    "pmid": 41716454,
+    "license": "CC BY",
+    "title": "Dolichoectasia of Anterior and Posterior Circulation With Thrombosed Saccular Aneurysm of Vertebral Artery Presenting as Obstructive Hydrocephalus: A Case Report.",
+    "abstract": "Vertebrobasilar dolichoectasia (VBD) is characterized by vascular elongation, widening, and tortuosity of cerebral vasculature. There are only a few reported cases of VBD as a cause of hydrocephalus. Here, we report a case in a 55-year-old male who presented with sudden vomiting for a day and worsening of headache for two weeks. He was diagnosed with CT imaging with angiographic findings: thrombosed saccular aneurysm of the vertebral artery along with dolichoectasia of the anterior and posterior circulation.",
+    "category": "Case Report",
+    "is_case_report": 1,
+    "rarity_level": "atypical_presentation",
+    "reasoning": "The abstract describes a case of dolichoectasia of the anterior and posterior circulation with a thrombosed saccular aneurysm of the vertebral artery presenting as obstructive hydrocephalus. While the condition itself is not uncommon, the combination of these features in a single patient is atypical and uncommon.",
+    "raw_response": "kräfte:\n{\n  \"category\": \"Case Report\",\n  \"is_case_report\": true,\n  \"rarity_level\": \"atypical_presentation\",\n  \"reasoning\": \"The abstract describes a case of dolichoectasia of the anterior and posterior circulation with a thrombosed saccular aneurysm of the vertebral artery presenting as obstructive hydrocephalus. While the condition itself is not uncommon, the combination of these features in a single patient is atypical and uncommon.\"\n}",
+    "external_links": {
+        "pubmed_url": "https://pubmed.ncbi.nlm.nih.gov/41716454/",
+        "aws_s3_prefix": "12912920.1"
+    }
+}
