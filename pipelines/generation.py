@@ -6,10 +6,10 @@ import shutil
 import base64
 import time
 import uuid
-import argparse
 from datetime import datetime
 
-from .utils import setup_proxy, get_openai_client
+from .utils import get_openai_client, finalize_prompt
+from .tools.registry import TOOL_SCHEMAS, AVAILABLE_TOOLS
 
 class GenerationPipeline:
     def __init__(self, working_dir: str, model_id: str):
@@ -24,16 +24,10 @@ class GenerationPipeline:
         self.client = get_openai_client()
 
     def _encode_image(self, image_path: str) -> str:
-        """
-        Encodes image to base64 for multimodal input.
-        """
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
 
     def _copy_images(self, source_directory: str, destination_directory: str):
-        """
-        Safely copies images from the source dataset to the generation directory.
-        """
         if not os.path.exists(source_directory):
             print(f"[-] Source directory not found for images: {source_directory}")
             return
@@ -48,17 +42,17 @@ class GenerationPipeline:
                     print(f"[!] Warning: Failed to copy image {img_path}: {e}")
         return copied_count
 
-    def _build_prompt(self, case_id: str, case_data: dict, image_list: str, sections_str: str) -> str:
-        """
-        Constructs the text portion of the multimodal prompt with a highly academic persona.
-        """
-        # Automatically append a References section to the requirements if it isn't already there
+    def _build_prompt(self, case_id: str, case_data: dict, image_ids: list, sections_str: str) -> str:
+        # Ensure References section is always requested
         if "References" not in sections_str and "Citations" not in sections_str:
             sections_str += "\n- References"
+            
+        # Format the list of IDs for the prompt
+        num_images = len(image_ids)
+        ids_string = ", ".join(image_ids) if num_images > 0 else "None"
 
-        return f"""
-        You are an expert medical researcher, clinician, and senior editor for a high-impact, peer-reviewed medical journal. Your task is to synthesize raw clinical data into a comprehensive, highly academic, and publication-ready clinical case report.
-
+        prompt = f"""You are an expert medical researcher, clinician, and senior editor for a high-impact, peer-reviewed medical journal. Your task is to synthesize raw clinical data into a comprehensive, highly academic, and publication-ready clinical case report.
+        
         CASE ID: {case_id}
         
         ### RAW CLINICAL DATA ###
@@ -67,40 +61,199 @@ class GenerationPipeline:
         - Diagnostics: {case_data.get('diagnostics')}
         - Management: {case_data.get('management')}
         - Outcome: {case_data.get('outcome')}
-        - Available Image References: {image_list}
-
+        
         ### WRITING GUIDELINES & ACADEMIC STANDARDS ###
         1. Tone & Style: The manuscript must be written in an authoritative, objective, and scholarly medical tone. Use precise clinical terminology. The depth of analysis should reflect a profound understanding of pathophysiology, epidemiology, and contemporary clinical guidelines. Target a comprehensive length (1500+ words).
         
         2. Context & Background Synthesis: Do not simply regurgitate the provided facts. You must embed this case within the broader medical context. 
            - In the Introduction, provide a robust background on the disease entity, its prevalence, and typical presentation. 
            - In the Discussion, extensively analyze the clinical decisions, compare this patient's presentation to standard presentations documented in medical literature, and explicitly state why this specific case adds value to the medical community.
-
+           
         3. Mandatory Structure: You MUST organize your article using EXACTLY these section headings in this order:
         {sections_str}
         
         4. Title & Abstract: Create a sophisticated, highly specific academic title. The Abstract must be a compelling, unbroken single paragraph summarizing the clinical presentation, key interventions, and the primary educational takeaway.
-
-        5. Figure Integration: Reference the provided images naturally within the text (e.g., "MRI of the cervical spine revealed a hyperintense lesion (Figure 1)"). Immediately following the paragraph where the figure is first mentioned, embed the figure EXACTLY using this Markdown syntax:
-           ![Figure n](IMG_XXXXXX)
-           > **Figure n:** [Provide a highly detailed, medically accurate radiographic, histological, or clinical descriptive caption].
-
-        6. Academic Referencing: You must compile a formal "References" section at the conclusion of the manuscript. Cite highly relevant medical literature, clinical trials, or landmark papers that support the pathophysiology, diagnostic criteria, and treatment modalities discussed in your text. 
-           - Use standard AMA (American Medical Association) citation style. 
-           - Integrate these citations naturally using standard bracketed or superscript numbers in the body text (e.g., "...as demonstrated in recent literature [1].").
+        
+        5. Figure Integration (CRITICAL REQUIREMENT): 
+           You have been provided with EXACTLY {num_images} images. Their Reference IDs are: [{ids_string}].
+           You MUST analyze and embed EVERY SINGLE IMAGE into the manuscript. You are strictly forbidden from omitting any images.
+           - Reference the images naturally within the text (e.g., "MRI of the cervical spine revealed a hyperintense lesion (Figure 1)").
+           - Immediately following the paragraph where the figure is first mentioned, embed the figure EXACTLY using this Markdown syntax:
+             ![Figure n](IMG_XXXXXX)
+             > **Figure n:** [Provide a highly detailed, medically accurate radiographic, histological, or clinical descriptive caption].
+           
+        ### CITATION & REFERENCE RULES (CRITICAL - ZERO TOLERANCE FOR HALLUCINATION) ###
+        You must compile a formal "References" section at the conclusion of the manuscript. 
+        1. NO MEMORY CITATIONS: You are strictly forbidden from writing citations from memory or inventing authors, titles, or DOIs.
+        2. STEP 1 - SEARCH: You MUST use the `search_pubmed` tool to find recent, relevant landmark papers and clinical guidelines to support your Introduction and Discussion.
+        3. STEP 2 - FETCH: For EVERY paper you decide to cite, you MUST extract its DOI from the search results and run the `fetch_ama_citation` tool. 
+        4. EXACT COPY: In your final References list, you must copy and paste the EXACT output string provided by the `fetch_ama_citation` tool. Do not alter it.
+        5. IN-TEXT INTEGRATION: Integrate these citations naturally using standard bracketed or superscript numbers in the body text (e.g., "...as demonstrated in recent literature [1].").
         """
+        
+        return finalize_prompt(prompt)
+
+    def _prepare_multimodal_payload(self, case_id: str, case_data: dict, source_dir: str, sections_str: str) -> tuple:
+        all_imgs = []
+        for ext in ('*.jpg', '*.png', '*.jpeg'):
+            all_imgs.extend(glob.glob(os.path.join(source_dir, ext)))
+        
+        all_imgs.sort(key=lambda f: [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', f)])
+
+        image_map = {}
+        virtual_ids_list = [] # Keep track of the IDs
+        
+        # 1. First, map all the images and create their Virtual IDs
+        for img_p in all_imgs:
+            real_filename = os.path.basename(img_p)
+            virtual_id = f"IMG_{uuid.uuid4().hex[:6].upper()}"
+            image_map[virtual_id] = img_p # Store full path temporarily for encoding
+            virtual_ids_list.append(virtual_id)
+
+        # 2. NOW build the prompt, passing in the exact list of IDs
+        prompt_text = self._build_prompt(case_id, case_data, virtual_ids_list, sections_str)
+        content_payload = [{"type": "text", "text": prompt_text}]
+
+        # 3. Add the images to the payload
+        for virtual_id, img_p in image_map.items():
+            b64 = self._encode_image(img_p)
+            mime = "jpeg" if img_p.lower().endswith(('.jpg', '.jpeg')) else "png"
+            
+            content_payload.append({"type": "text", "text": f"Reference ID: {virtual_id}"})
+            content_payload.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:image/{mime};base64,{b64}", "detail": "high"}
+            })
+            
+            # Switch the map back to just the filename for post-processing
+            image_map[virtual_id] = os.path.basename(img_p) 
+
+        safe_payload = []
+        for item in content_payload:
+            if item["type"] == "text":
+                safe_payload.append(item)
+            elif item["type"] == "image_url":
+                safe_payload.append({"type": "image_url", "image_url": "[BASE64_IMAGE_DATA_OMITTED_FOR_LOG]"})
+                
+        return content_payload, image_map, safe_payload
+
+    # ADDED case_data argument here so we can read the JSON metadata
+    def _execute_llm_with_tools(self, messages: list, execution_log: dict, case_data: dict) -> str:
+        prompt_tokens = 0
+        comp_tokens = 0
+        
+        print("    [*] Starting LLM Tool Loop...")
+        
+        # Allow up to 15 turns for the LLM to search, fetch citations, and write
+        for turn in range(15):
+            response = self.client.chat.completions.create(
+                model=self.model_id,
+                messages=messages,
+                tools=TOOL_SCHEMAS,
+                tool_choice="auto", # Let the LLM decide when to use tools and when to write
+                temperature=0.1
+            )
+            
+            response_message = response.choices[0].message
+            prompt_tokens += response.usage.prompt_tokens
+            comp_tokens += response.usage.completion_tokens
+
+            # If the LLM didn't call any tools, it means it's done and is writing the final article
+            if not response_message.tool_calls:
+                print(f"    [*] Turn {turn + 1}: No more tools required. Final generation complete.")
+                break
+                
+            messages.append(response_message)
+            
+            # Execute all requested tools
+            for tool_call in response_message.tool_calls:
+                function_name = tool_call.function.name
+                function_to_call = AVAILABLE_TOOLS.get(function_name)
+                
+                current_tool_log = {
+                    "tool_name": function_name,
+                    "arguments": None,
+                    "raw_result": None,
+                    "error": None
+                }
+                
+                try:
+                    function_args = json.loads(tool_call.function.arguments)
+                    
+                    # --- INJECT CONTEXT SILENTLY ---
+                    function_args["execution_log"] = execution_log
+                    function_args["case_data"] = case_data
+                    
+                    log_args = {k: v for k, v in function_args.items() if k not in ["execution_log", "case_data"]}
+                    current_tool_log["arguments"] = log_args
+                    
+                    print(f"    [*] Turn {turn + 1}: Executing {function_name}({log_args})")
+                    
+                    if function_to_call:
+                        function_response = function_to_call(**function_args)
+                        try:
+                            current_tool_log["raw_result"] = json.loads(function_response) if isinstance(function_response, str) else function_response
+                        except json.JSONDecodeError:
+                            current_tool_log["raw_result"] = function_response
+                    else:
+                        function_response = f"Error: Tool '{function_name}' is not registered."
+                        current_tool_log["error"] = function_response
+                        
+                except Exception as e:
+                    print(f"    [X] Tool execution failed: {e}")
+                    function_response = f"Error executing tool: {str(e)}"
+                    current_tool_log["error"] = str(e)
+                
+                execution_log["tool_calls"].append(current_tool_log)
+                messages.append({
+                    "tool_call_id": tool_call.id,
+                    "role": "tool",
+                    "name": function_name,
+                    "content": str(function_response),
+                })
+
+        raw_content = response_message.content
+        
+        execution_log["raw_response"] = raw_content
+        execution_log["tokens"]["prompt"] = prompt_tokens
+        execution_log["tokens"]["completion"] = comp_tokens
+        execution_log["tokens"]["total"] = prompt_tokens + comp_tokens
+        
+        return raw_content
+
+    def _post_process_and_save(self, raw_content: str, image_map: dict, case_id: str, case_dir: str):
+        if not raw_content:
+            raise ValueError("LLM returned an empty string.")
+            
+        processed_content = raw_content.strip()
+        
+        # 1. Strip leading frontmatter or standalone dashes
+        # This removes "---" at the start, and anything between two "---" blocks if it tried to make YAML
+        processed_content = re.sub(r"^\s*---[\s\S]*?---\s*\n|^\s*---\s*\n", "", processed_content)
+        
+        # 2. Strip the trailing academic note (and the dashes before it)
+        # Using re.DOTALL (or inline (?s)) in case the note spans multiple lines
+        processed_content = re.sub(r"\n\s*---\s*\n\s*\*\*Note:\*\*.*$", "", processed_content, flags=re.IGNORECASE | re.DOTALL)
+
+        # 3. Replace image tags
+        for v_id, real_name in image_map.items():
+            pattern = rf"\(({re.escape(v_id)})\)"
+            processed_content = re.sub(pattern, f"(imgs/{real_name})", processed_content)
+
+        # Clean up any trailing whitespace left behind by the stripping
+        processed_content = processed_content.strip()
+
+        output_file = os.path.join(case_dir, f"{case_id}_generated.md")
+        with open(output_file, "w", encoding='utf-8') as f:
+            f.write(processed_content)
+            
     def process_case(self, json_path: str):
-        """
-        Processes a single case, formatting the prompt, passing images to the LLM,
-        and logging the execution.
-        """
         case_id = os.path.basename(json_path).split('_')[0]
         case_dir = os.path.join(self.working_dir, case_id)
         log_output_path = os.path.join(case_dir, "pipeline_execution_log.json")
         
         print(f"Processing Case ID: {case_id} | JSON Path: {json_path}\n")
         
-        # Prepare the comprehensive execution log structure
         execution_log = {
             "step": "generate_journal",
             "case_id": case_id,
@@ -108,13 +261,10 @@ class GenerationPipeline:
             "status": "failed",
             "execution_time_seconds": 0.0,
             "error_message": None,
-            "tokens": {
-                "prompt": 0,
-                "completion": 0,
-                "total": 0
-            },
+            "tokens": {"prompt": 0, "completion": 0, "total": 0},
             "system_prompt": None,
             "raw_prompt_payload": [], 
+            "tool_calls": [], 
             "raw_response": None,
             "mapped_images": {}
         }
@@ -122,7 +272,6 @@ class GenerationPipeline:
         start_time = time.time()
 
         try:
-            # 1. Load the atoms JSON data
             with open(json_path, 'r', encoding='utf-8') as f:
                 case_data = json.load(f)
                 
@@ -132,111 +281,54 @@ class GenerationPipeline:
             paper_sections = case_data.get('metadata', {}).get('paper_sections_found', [])
             sections_str = "\n".join([f"- {sec}" for sec in paper_sections]) if paper_sections else "- Introduction\n- Case Presentation\n- Discussion"
             
-            # Setup directories
             os.makedirs(case_dir, exist_ok=True)
             os.makedirs(case_img_dir, exist_ok=True)
-            
-            # Copy images to local folder
             self._copy_images(source_dir, case_img_dir)
 
-            # 2. Image Gathering and Natural Sort
-            all_imgs = []
-            for ext in ('*.jpg', '*.png', '*.jpeg'):
-                all_imgs.extend(glob.glob(os.path.join(source_dir, ext)))
+            content_payload, image_map, safe_payload = self._prepare_multimodal_payload(
+                case_id, case_data, source_dir, sections_str
+            )
             
-            # Natural sort (ensures 10.png comes after 2.png)
-            all_imgs.sort(key=lambda f: [int(c) if c.isdigit() else c.lower() for c in re.split(r'(\d+)', f)])
-
-            # 3. Create the Random Mapping and Build Payload
-            image_map = {}
-            prompt_text = self._build_prompt(case_id, case_data, "HIDDEN_FOR_ANALYSIS", sections_str)
-            content_payload = [{"type": "text", "text": prompt_text}]
-
-            for img_p in all_imgs:
-                real_filename = os.path.basename(img_p)
-                
-                # Generate a random 6-character hex string (e.g., IMG_A3F9B2)
-                virtual_id = f"IMG_{uuid.uuid4().hex[:6].upper()}"
-                image_map[virtual_id] = real_filename
-                
-                b64 = self._encode_image(img_p)
-                mime = "jpeg" if img_p.lower().endswith(('.jpg', '.jpeg')) else "png"
-                
-                content_payload.append({"type": "text", "text": f"Reference ID: {virtual_id}"})
-                content_payload.append({
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/{mime};base64,{b64}", "detail": "high"}
-                })
-
             execution_log["mapped_images"] = image_map
-            
-            # Safely capture the full prompt payload for the log (omitting giant base64 strings)
-            safe_payload = []
-            for item in content_payload:
-                if item["type"] == "text":
-                    safe_payload.append(item)
-                elif item["type"] == "image_url":
-                    safe_payload.append({"type": "image_url", "image_url": "[BASE64_IMAGE_DATA_OMITTED_FOR_LOG]"})
+            execution_log["raw_prompt_payload"] = safe_payload
             
             system_instruction = (
-                "You are a medical editor. Analyze the provided images. "
-                "When embedding images in Markdown, you MUST use the provided random 'Reference ID' "
-                "as the source path exactly, like this: ![Figure n](IMG_A1B2C3)"
+                "You are an expert medical researcher, clinician, and senior editor for a high-impact medical journal. "
+                "Your primary directive is academic integrity. You must follow this EXACT workflow:\n"
+                "STEP 1: Use `search_pubmed` to find highly relevant literature to support your clinical discussion.\n"
+                "STEP 2: Review the results from PubMed and identify the specific DOIs of the papers you intend to cite.\n"
+                "STEP 3: For EVERY paper you want to cite, you MUST run the `fetch_ama_citation` tool using its DOI. "
+                "Do NOT manually format citations. You must rely on the tool's output.\n"
+                "STEP 4: Only after fetching all citations, write the final manuscript. "
+                "NO HALLUCINATIONS. If you did not fetch it via tools, you cannot cite it."
             )
-            
             execution_log["system_prompt"] = system_instruction
-            execution_log["raw_prompt_payload"] = safe_payload
-
-            # 4. Call OpenAI API
-            response = self.client.chat.completions.create(
-                model=self.model_id,
-                messages=[
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": content_payload}
-                ],
-                temperature=0.3
-            )
-
-            raw_content = response.choices[0].message.content
-            usage = response.usage
             
-            # Update log with successful API return
-            execution_log["raw_response"] = raw_content
-            execution_log["tokens"]["prompt"] = usage.prompt_tokens
-            execution_log["tokens"]["completion"] = usage.completion_tokens
-            execution_log["tokens"]["total"] = usage.total_tokens
+            messages = [
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": content_payload}
+            ]
 
-            # 5. Post-process with Regex to restore real filenames
-            processed_content = raw_content
-            for v_id, real_name in image_map.items():
-                pattern = rf"\(({re.escape(v_id)})\)"
-                processed_content = re.sub(pattern, f"(imgs/{real_name})", processed_content)
+            # Passed case_data down to the execution function
+            raw_content = self._execute_llm_with_tools(messages, execution_log, case_data)
 
-            # Save the final Markdown
-            output_file = os.path.join(case_dir, f"{case_id}_generated.md")
-            with open(output_file, "w", encoding='utf-8') as f:
-                f.write(processed_content)
-                
+            self._post_process_and_save(raw_content, image_map, case_id, case_dir)
             execution_log["status"] = "success"
             
             print(f"[+] {case_id}: Journal generated and saved to {case_dir}")
-            print(f"    Tokens - Total: {usage.total_tokens} | Time: {time.time() - start_time:.2f}s")
-            print(f"    Images - Randomly mapped and embedded {len(image_map)} files.")
+            print(f"    Tokens - Total: {execution_log['tokens']['total']} | Time: {time.time() - start_time:.2f}s")
+            print(f"    Images - Randomly mapped and embedded {len(image_map)} files.\n")
 
         except Exception as e:
             execution_log["error_message"] = str(e)
-            print(f"[X] {case_id}: Error -> {e}")
+            print(f"[X] {case_id}: Error -> {e}\n")
             
         finally:
-            # 6. ALWAYS save the full log file
             execution_log["execution_time_seconds"] = round(time.time() - start_time, 2)
             with open(log_output_path, "w", encoding="utf-8") as f:
                 json.dump(execution_log, f, indent=4)
 
     def run(self):
-        """
-        Executes the batch processing loop.
-        """
         json_files = glob.glob(os.path.join(self.working_dir, "*", "*_atoms.json"))
         
         print(f"Starting journal generation for {len(json_files)} cases...")
@@ -248,29 +340,3 @@ class GenerationPipeline:
             
         print("-" * 40)
         print("Batch journal generation complete.")
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Generate multimodal medical journals from JSON facts and images.")
-    parser.add_argument("--working_dir", type=str, default="/home/data1/musong/workspace/2026/03/10/log/0310_generated",
-                        help="The base directory containing the case folders and their extracted atoms.")
-    parser.add_argument("--model_id", type=str, default="gpt-4o",
-                        help="The OpenAI multimodal model to use for generation.")
-    return parser.parse_args()
-
-
-if __name__ == "__main__":
-    # 1. Setup proxy at the VERY BEGINNING of execution
-    PROXY = "http://127.0.0.1:7890"
-    setup_proxy(PROXY)
-    
-    # 2. Parse arguments
-    args = parse_args()
-
-    # 3. Initialize and run the pipeline
-    pipeline = GenerationPipeline(
-        working_dir=args.working_dir, 
-        model_id=args.model_id
-    )
-    
-    pipeline.run()

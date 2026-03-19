@@ -10,7 +10,7 @@ import pubmed_parser as pp
 from .utils import setup_proxy, get_openai_client, extract_json_from_text
 
 class AtomsExtractorPipeline:
-    def __init__(self, data_dir: str, out_dir: str, num_folders: int, seed: int, char_limit: int, model_id: str, included_sections: list):
+    def __init__(self, data_dir: str, out_dir: str, num_folders: int, model_id: str, included_sections: list, char_limit: int=100000, seed: int=42):
         """
         Initializes the pipeline with configuration and sets up the OpenAI client.
         Note: Proxy should be set globally before initializing this class.
@@ -100,7 +100,7 @@ class AtomsExtractorPipeline:
                         fig_texts = [f"{c.get('fig_label', 'Figure')}: {c.get('fig_caption', 'No caption').strip()}" for c in captions]
                         full_text_parts.append("--- FIGURE DESCRIPTIONS ---\n" + "\n\n".join(fig_texts))
                 except Exception as e:
-                    print(f"  [!] Warning: Could not parse figures for {xml_path}: {e}")
+                    print(f"    [!] Warning: Could not parse figures for {xml_path}: {e}")
 
             # 4. Extract Tables
             if "tables" in self.included_sections:
@@ -110,7 +110,7 @@ class AtomsExtractorPipeline:
                         table_texts = [f"{t.get('label', 'Table')}: {t.get('caption', '').strip()}" for t in tables]
                         full_text_parts.append("--- TABLE DESCRIPTIONS ---\n" + "\n\n".join(table_texts))
                 except Exception as e:
-                    print(f"  [!] Warning: Could not parse tables for {xml_path}: {e}")
+                    print(f"    [!] Warning: Could not parse tables for {xml_path}: {e}")
 
             # 5. Extract Citations (Custom ElementTree Parser)
             if "citations" in self.included_sections:
@@ -140,7 +140,7 @@ class AtomsExtractorPipeline:
                     if cite_texts:
                         full_text_parts.append("--- CITATIONS / REFERENCES ---\n" + "\n".join(cite_texts))
                 except Exception as e:
-                    print(f"  [!] Warning: Could not parse citations manually for {xml_path}: {e}")
+                    print(f"    [!] Warning: Could not parse citations manually for {xml_path}: {e}")
 
             # Combine everything
             full_text = "\n\n---------------------------\n\n".join(full_text_parts)
@@ -262,17 +262,17 @@ class AtomsExtractorPipeline:
                 
                 # Mark as success
                 execution_log["status"] = "success"
-                print(f"[+] {folder_id}: Extracted and saved to {case_dir}")
+                print(f"    [+] {folder_id}: Extracted and saved to {case_dir}")
                 print(f"Tokens - Total: {usage.total_tokens} | Time: {time.time() - start_time:.2f}s")
                 
             else:
                 error_msg = "Could not find valid JSON in LLM response."
                 execution_log["error_message"] = error_msg
-                print(f"[X] {folder_id}: {error_msg}")
+                print(f"    [X] {folder_id}: {error_msg}")
             
         except Exception as e:
             execution_log["error_message"] = str(e)
-            print(f"[X] {folder_id}: Error -> {e}")
+            print(f"    [X] {folder_id}: Error -> {e}")
             
         finally:
             # 4. ALWAYS save the log file
@@ -296,39 +296,3 @@ class AtomsExtractorPipeline:
             
         print("-" * 40)
         print("Batch extraction complete.")
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Extract atomic clinical facts from PubMed XML to JSON.")
-    parser.add_argument("--data_dir", type=str, default="/home/data1/musong/workspace/2026/03/10/data/0310_pipeline_bench")
-    parser.add_argument("--out_dir", type=str, default="/home/data1/musong/workspace/2026/03/10/log/0310_generated")
-    parser.add_argument("--num_folders", type=int, default=2)
-    parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--char_limit", type=int, default=100000) 
-    parser.add_argument("--model_id", type=str, default="gpt-4o")
-    parser.add_argument(
-        "--sections", 
-        nargs="+", 
-        default=["authors", "year", "figures", "tables", "citations"], 
-        help="Specify which additional metadata to feed to the LLM. Options: authors year figures tables citations"
-    )
-    return parser.parse_args()
-
-if __name__ == "__main__":
-    # 1. Setup proxy at the VERY BEGINNING of execution
-    PROXY = "http://127.0.0.1:7890"
-    setup_proxy(PROXY)
-    
-    # 2. Parse arguments and run the pipeline
-    args = parse_args()
-
-    extractor = AtomsExtractorPipeline(
-        data_dir=args.data_dir,
-        out_dir=args.out_dir,
-        num_folders=args.num_folders,
-        seed=args.seed,
-        char_limit=args.char_limit,
-        model_id=args.model_id,
-        included_sections=args.sections
-    )
-    
-    extractor.run()

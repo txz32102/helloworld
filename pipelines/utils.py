@@ -43,3 +43,15 @@ def encode_image(image_path: str) -> str:
     """
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode('utf-8')
+    
+def finalize_prompt(prompt_text: str) -> str:
+    # 1. Split into lines and strip EVERY line of leading/trailing whitespace
+    lines = [line.strip() for line in prompt_text.splitlines()]
+    
+    # 2. Join back with newlines
+    cleaned = "\n".join(lines)
+    
+    # 3. Optional: Replace 3+ consecutive newlines with just 2 (standardizes spacing)
+    cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
+    
+    return cleaned.strip()

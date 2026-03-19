@@ -31,9 +31,23 @@ class PMCArticleParser:
         self.article_data['authors'] = basic_info.get('author_list', [])
 
     def _extract_main_content(self):
-        """Extracts the main text body paragraph by paragraph."""
+        """Extracts the main text body paragraph by paragraph, preserving section headers."""
         paragraphs = pp.parse_pubmed_paragraph(self.file_path)
-        self.article_data['main_content'] = [p.get('text', '') for p in paragraphs if p.get('text')]
+        self.article_data['main_content'] = []
+        
+        for p in paragraphs:
+            raw_text = p.get('text', '')
+            sec_title = p.get('section', '').strip()
+            clean_text = " ".join(raw_text.split())
+            
+            # Skip empty paragraphs or useless publisher notes
+            if not clean_text or "Publisher's Note" in clean_text or "Springer Nature remains neutral" in clean_text:
+                continue
+                
+            self.article_data['main_content'].append({
+                'section': sec_title,
+                'text': clean_text
+            })
 
     def _extract_figures(self):
         """Extracts figure count, labels, captions, and the actual graphic filenames."""
@@ -87,24 +101,22 @@ class PMCArticleParser:
 
 
 class PMCArticleMDGenerator:
-    def __init__(self, article_data, output_path, source_image_dir):
+    def __init__(self, article_data, output_path, source_image_dir, display_authors=False):
         self.data = article_data
         self.output_path = output_path
         self.source_image_dir = source_image_dir
+        self.display_authors = display_authors # Request 2: Authors hidden by default
 
         # Map images to your new local 'imgs' directory
         for fig in self.data.get('figures', []):
             base_img = fig['img_filename']
-            # Look in the source dir just to find the actual file with its extension
             matched_files = glob.glob(os.path.join(self.source_image_dir, f"{base_img}*"))
             
             valid_extensions = ('.jpg', '.jpeg', '.png', '.gif', '.tif', '.tiff')
             valid_images = [f for f in matched_files if f.lower().endswith(valid_extensions)]
             
             if valid_images:
-                # Grab just the filename (e.g., "10014_2020_365_Fig1_HTML.jpg")
                 actual_filename = os.path.basename(valid_images[0])
-                # Path is now just relative to the current folder where the MD file lives
                 fig['img_path'] = f"imgs/{actual_filename}"
 
     def _get_interleaved_content(self):
@@ -118,8 +130,12 @@ class PMCArticleMDGenerator:
             
         sorted_figures = sorted(self.data.get('figures', []), key=get_fig_num)
 
-        for para in self.data.get('main_content', []):
-            blocks.append({'type': 'paragraph', 'content': para})
+        # Handle the new dictionary structure from main_content
+        for para_dict in self.data.get('main_content', []):
+            para_text = para_dict['text']
+            section = para_dict['section']
+            
+            blocks.append({'type': 'paragraph', 'content': para_text, 'section': section})
             
             for fig in sorted_figures:
                 if fig['id'] in placed_figures:
@@ -131,7 +147,7 @@ class PMCArticleMDGenerator:
                     fig_num = match.group()
                     pattern = r'\b(?:fig\.?|figure|figs\.?|figures)\b[^.]{0,40}?\b' + fig_num + r'[a-zA-Z]*\b'
                     
-                    if re.search(pattern, para, re.IGNORECASE):
+                    if re.search(pattern, para_text, re.IGNORECASE):
                         blocks.append({'type': 'figure', 'content': fig})
                         placed_figures.add(fig['id'])
 
@@ -142,6 +158,39 @@ class PMCArticleMDGenerator:
 
         return blocks
 
+    def _get_ama_citation(self, cite):
+        """
+        Attempts to fetch perfect AMA citation via Crossref API using DOI.
+        Falls back to local formatting if the API fails or DOI is missing.
+        """
+        doi = cite.get('doi', '')
+        if doi:
+            try:
+                # Content negotiation for AMA format
+                url = f"https://api.crossref.org/works/{doi}/transform/text/x-bibliography?style=american-medical-association"
+                req = urllib.request.Request(url, headers={'User-Agent': 'mailto:your.email@example.com'})
+                with urllib.request.urlopen(req, timeout=3) as response:
+                    return response.read().decode('utf-8').strip()
+            except Exception:
+                pass # API failed, timed out, or ratelimited. Proceed to local fallback.
+
+        # Fallback local pseudo-AMA formatting
+        authors = cite.get('authors', '').replace(';', ',').strip()
+        title = cite.get('article_title', '').strip()
+        journal = cite.get('journal', '').strip()
+        year = cite.get('year', '').strip()
+        
+        # Build list of available elements (ignoring empty ones) and join them with '. '
+        elements = [e for e in [authors, title, journal, year] if e]
+        
+        # Join with a period and space, then add a final period
+        ref_str = ". ".join(elements) + "."
+        
+        if doi:
+            ref_str += f" doi:{doi}"
+            
+        return ref_str
+
     def generate(self):
         """Generates the Markdown file and writes it to disk."""
         interleaved_blocks = self._get_interleaved_content()
@@ -151,33 +200,29 @@ class PMCArticleMDGenerator:
         title = self.data.get('title', 'Untitled Document')
         md_lines.append(f"# {title}\n")
 
-        # Authors
-        authors = self.data.get('authors', [])
-        author_names = []
-        for a in authors:
-            if isinstance(a, list) and len(a) >= 2:
-                last_name = a[0] if a[0] else ""
-                first_name = a[1] if a[1] else ""
-                name = f"{first_name} {last_name}".strip()
-                if name:
-                    author_names.append(name)
-            elif isinstance(a, dict):
-                last_name = a.get('last_name', '') or ""
-                first_name = a.get('first_name', '') or ""
-                name = f"{first_name} {last_name}".strip()
-                if name:
-                    author_names.append(name)
+        # Authors (Controlled by display_authors flag)
+        if self.display_authors:
+            authors = self.data.get('authors', [])
+            author_names = []
+            for a in authors:
+                if isinstance(a, list) and len(a) >= 2:
+                    last_name, first_name = (a[0] or ""), (a[1] or "")
+                    name = f"{first_name} {last_name}".strip()
+                    if name: author_names.append(name)
+                elif isinstance(a, dict):
+                    last_name, first_name = (a.get('last_name', '') or ""), (a.get('first_name', '') or "")
+                    name = f"{first_name} {last_name}".strip()
+                    if name: author_names.append(name)
 
-        # Deduplicate authors while preserving order
-        unique_authors = []
-        seen = set()
-        for name in author_names:
-            if name not in seen:
-                unique_authors.append(name)
-                seen.add(name)
+            unique_authors = []
+            seen = set()
+            for name in author_names:
+                if name not in seen:
+                    unique_authors.append(name)
+                    seen.add(name)
 
-        if unique_authors:
-            md_lines.append(f"**Authors:** {', '.join(unique_authors)}\n")
+            if unique_authors:
+                md_lines.append(f"**Authors:** {', '.join(unique_authors)}\n")
 
         # Abstract
         abstract = self.data.get('abstract', '')
@@ -185,22 +230,33 @@ class PMCArticleMDGenerator:
             md_lines.append("## Abstract\n")
             md_lines.append(f"{abstract}\n")
 
-        # Main Content
-        md_lines.append("## Main Content\n")
+        # Main Content (Request 1: Dynamic Sections)
+        current_section = None
         for block in interleaved_blocks:
             if block['type'] == 'paragraph':
+                sec = block.get('section', '')
+                
+                # If section changed and exists, print new header
+                if sec and sec != current_section:
+                    # Clean up styling (e.g. capitalize words)
+                    display_sec = sec.title()
+                    md_lines.append(f"## {display_sec}\n")
+                    current_section = sec
+                # Fallback if the XML lacks sections entirely
+                elif not sec and current_section is None:
+                    md_lines.append("## Main Content\n")
+                    current_section = "Main Content"
+                    
                 md_lines.append(f"{block['content']}\n")
+                
             elif block['type'] == 'figure':
                 fig = block['content']
                 img_path = fig.get('img_path', '')
                 label = fig.get('label', 'Figure')
                 caption = fig.get('caption', '')
                 
-                # Render Image if path exists
                 if img_path:
                     md_lines.append(f"![{label}]({img_path})\n")
-                
-                # Render Caption
                 md_lines.append(f"> **{label}:** {caption}\n")
 
         # References
@@ -208,24 +264,14 @@ class PMCArticleMDGenerator:
         if citations:
             md_lines.append("## References\n")
             for idx, cite in enumerate(citations, 1):
-                authors_cite = cite.get('authors', '')
-                year = cite.get('year', '')
-                title = cite.get('article_title', '')
-                journal = cite.get('journal', '')
-                doi = cite.get('doi', '')
-
-                ref_str = f"{idx}. {authors_cite} ({year}). \"{title}\". *{journal}*."
-                if doi:
-                    ref_str += f" [DOI: {doi}](https://doi.org/{doi})"
-                
-                md_lines.append(f"{ref_str}\n")
+                ama_citation = self._get_ama_citation(cite)
+                md_lines.append(f"{idx}. {ama_citation}\n")
 
         # Write out to file
         with open(self.output_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(md_lines))
             
         print(f"✅ Successfully saved Ground Truth Markdown to: {self.output_path}\n")
-
 
 class MDConversionPipeline:
     def __init__(self, data_dir: str, out_dir: str):

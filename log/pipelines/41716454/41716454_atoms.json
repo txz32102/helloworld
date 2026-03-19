@@ -1,0 +1,63 @@
+{
+  "history": [
+    "55-year-old male with hypertension (controlled on medication for 10 years) and dyslipidemia (on medication for 5 years)",
+    "Episodes of dizziness for 1 month"
+  ],
+  "presentation": [
+    "Presented with 2 episodes of vomiting for 1 day",
+    "Headache and nausea for 2 weeks",
+    "Ill-looking general condition on examination",
+    "Bilateral papilledema on funduscopic examination"
+  ],
+  "diagnostics": [
+    "Vitals within normal limits",
+    "GCS score E4V5M6",
+    "No significant abnormality on systemic examination",
+    "Basic blood tests (CBC with differentials, comprehensive metabolic panel) within physiological limits",
+    "Non-contrast CT brain: hyperdense lesion anterior to brainstem within prepontine cistern, compression of 4th ventricle, dilated bilateral lateral ventricles with periventricular seepage suggestive of hydrocephalus",
+    "CT cerebral angiography: partially thrombosed fusiform aneurysm of left vertebral artery (2.8 cm diameter, 3.2 cm length), non-enhancing hypodense area in peripheral portion representing thrombosis, contrast opacification in central portion representing residual lumen",
+    "Hypoplastic right vertebral artery",
+    "Dolichoectasia of V4 segment of left vertebral and basilar artery with irregular areas of dilatation",
+    "Ectatic left vertebral artery crossing midline to right side",
+    "Absent A1 segment of left ACA with bilateral ACA arising from A1 segment of right ACA",
+    "Ectasia of terminal segment of right internal carotid, proximal M1 segment of right MCA, and proximal A1 segment of right ACA",
+    "Other places for thrombus ruled out with echocardiogram and CT chest angiography",
+    "No provoked cause of thrombus from history",
+    "Diagnosis: obstructive hydrocephalus due to partially thrombosed fusiform aneurysm of left vertebral artery with ectasia of anterior and posterior cerebral circulation"
+  ],
+  "management": [
+    "Symptomatic treatment with analgesics for headache and antiemetics for vomiting",
+    "Counseling for anticoagulation (apixaban 10 mg for a week followed by 5 mg twice daily), started after four days",
+    "Anticoagulation stopped after two months",
+    "Antihypertensive medicines optimized for blood pressure control",
+    "Patient refused further medical intervention",
+    "Ongoing discussions about further management at each follow-up"
+  ],
+  "outcome": [
+    "Partial relief of headache at 1 month follow-up",
+    "Doing better and symptoms partially in control at 3 months follow-up"
+  ],
+  "metadata": {
+    "folder_id": "41716454",
+    "original_xml_path": "demo_data/41716454/PMC12912920.1.xml",
+    "source_directory": "demo_data/41716454",
+    "optional_sections_requested": [
+      "authors",
+      "year",
+      "figures",
+      "tables",
+      "citations"
+    ],
+    "paper_sections_found": [
+      "Introduction",
+      "Case History/Examination",
+      "Differential Diagnosis, Investigations and Treatment",
+      "Conclusion and Results",
+      "Discussion",
+      "Author Contributions",
+      "Funding",
+      "Consent",
+      "Conflicts of Interest"
+    ]
+  }
+}
