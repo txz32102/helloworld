@@ -1,3 +1,36 @@
+import sys
+import os
+from datetime import datetime
+
+# ---------------------------------------------------------
+# 1. SETUP LOGGER (Catches all prints and saves to file)
+# ---------------------------------------------------------
+class DualLogger:
+    """Writes output to both the terminal and a log file."""
+    def __init__(self, filepath):
+        self.terminal = sys.stdout
+        self.log = open(filepath, "a", encoding="utf-8")
+
+    def write(self, message):
+        self.terminal.write(message)
+        self.log.write(message)
+        self.log.flush()  # Forces write to disk immediately
+
+    def flush(self):
+        self.terminal.flush()
+        self.log.flush()
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+os.makedirs("log", exist_ok=True)
+os.makedirs(f"log/pipelines/{timestamp}", exist_ok=True)
+log_filepath = os.path.join(f"log/pipelines/{timestamp}", f"pipeline_execution.log")
+
+sys.stdout = DualLogger(log_filepath)
+sys.stderr = sys.stdout  # This ensures error tracebacks are also logged
+
+print(f"🚀 Starting pipeline execution. Logging terminal output to: {log_filepath}")
+print("-" * 60)
+
 from pipelines.utils import setup_proxy
 from pipelines.extraction import AtomsExtractorPipeline
 from pipelines.generation import GenerationPipeline
@@ -10,7 +43,7 @@ setup_proxy(PROXY)
 model_id = 'gpt-4.1'
 
 data_dir = "demo_data"
-out_dir = "log/pipelines"
+out_dir = f"log/pipelines/{timestamp}"
 
 extractor = AtomsExtractorPipeline(
     data_dir=data_dir,

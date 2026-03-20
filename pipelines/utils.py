@@ -55,3 +55,77 @@ def finalize_prompt(prompt_text: str) -> str:
     cleaned = re.sub(r'\n{3,}', '\n\n', cleaned)
     
     return cleaned.strip()
+
+def generate_llm_response(client: OpenAI, model: str, messages: list, stream: bool = False, **kwargs) -> dict:
+    """
+    Advanced utility to handle OpenAI calls with an easy toggle for streaming.
+    Returns a normalized dictionary containing "content", "tool_calls", and "usage".
+    """
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        stream=stream,
+        **kwargs
+    )
+
+    # 1. Handle Non-Streaming
+    if not stream:
+        msg = response.choices[0].message
+        formatted_tools = None
+        if msg.tool_calls:
+            # Convert objects to dicts to match streaming format
+            formatted_tools = [{
+                "id": tc.id,
+                "type": "function",
+                "function": {"name": tc.function.name, "arguments": tc.function.arguments}
+            } for tc in msg.tool_calls]
+            
+        return {
+            "content": msg.content or "",
+            "tool_calls": formatted_tools,
+            "usage": response.usage
+        }
+
+    # 2. Handle Streaming
+    collected_content = ""
+    tool_calls_dict = {}
+    final_usage = None
+
+    for chunk in response:
+        # Track token usage
+        if hasattr(chunk, 'usage') and chunk.usage:
+            final_usage = chunk.usage
+
+        if not chunk.choices:
+            continue
+
+        delta = chunk.choices[0].delta
+
+        # Accumulate Text
+        if delta.content:
+            collected_content += delta.content
+            print(delta.content, end="", flush=True)
+
+        # Accumulate Tool Calls
+        if delta.tool_calls:
+            for tc in delta.tool_calls:
+                idx = tc.index
+                if idx not in tool_calls_dict:
+                    tool_calls_dict[idx] = {
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {"name": tc.function.name or "", "arguments": ""}
+                    }
+                if tc.function.arguments:
+                    tool_calls_dict[idx]["function"]["arguments"] += tc.function.arguments
+
+    # Format tool calls into a list
+    formatted_tool_calls = None
+    if tool_calls_dict:
+        formatted_tool_calls = [tool_calls_dict[idx] for idx in sorted(tool_calls_dict.keys())]
+
+    return {
+        "content": collected_content,
+        "tool_calls": formatted_tool_calls,
+        "usage": final_usage
+    }

@@ -5,7 +5,7 @@ import time
 import random
 from datetime import datetime
 
-from .utils import get_openai_client, encode_image
+from .utils import get_openai_client, encode_image, generate_llm_response
 
 class EvaluationPipeline:
     def __init__(self, base_dir: str, model_id: str):
@@ -147,25 +147,31 @@ class EvaluationPipeline:
 
         # --- EXECUTE BOTH CALLS ---
         try:
-            # R1 Call
-            response_r1 = self.client.chat.completions.create(
+            # R1 Call (Blinded A/B Test)
+            print("    [*] Executing Round 1 (streaming)... ", end="", flush=True)
+            response_data_r1 = generate_llm_response(
+                client=self.client,
                 model=self.model_id,
                 messages=[{"role": "user", "content": r1_payload}],
-                max_tokens=2000,
+                stream=True,
+                stream_options={"include_usage": True},
                 temperature=0.2,
-                response_format={ "type": "json_object" }
+                response_format={ "type": "json_object" } # Passed seamlessly to OpenAI
             )
-            r1_data = json.loads(response_r1.choices[0].message.content)
+            r1_data = json.loads(response_data_r1["content"])
             
-            # R2 Call
-            response_r2 = self.client.chat.completions.create(
+            # R2 Call (Unblinded Error Analysis)
+            print("    [*] Executing Round 2 (streaming)... ", end="", flush=True)
+            response_data_r2 = generate_llm_response(
+                client=self.client,
                 model=self.model_id,
                 messages=[{"role": "user", "content": r2_payload}],
-                max_tokens=2000,
-                temperature=0.1, # Lower temp for stricter auditing
+                stream=True,
+                stream_options={"include_usage": True},
+                temperature=0.1,
                 response_format={ "type": "json_object" }
             )
-            r2_data = json.loads(response_r2.choices[0].message.content)
+            r2_data = json.loads(response_data_r2["content"])
 
             # --- PROCESS RESULTS ---
             # Calculate Averages for R1
@@ -182,10 +188,15 @@ class EvaluationPipeline:
             execution_log["round_1_results"]["Guess_Correct"] = guessed_correctly
             execution_log["round_2_results"] = r2_data
             
-            # Tokens Total
-            execution_log["tokens"]["prompt"] = response_r1.usage.prompt_tokens + response_r2.usage.prompt_tokens
-            execution_log["tokens"]["completion"] = response_r1.usage.completion_tokens + response_r2.usage.completion_tokens
-            execution_log["tokens"]["total"] = execution_log["tokens"]["prompt"] + execution_log["tokens"]["completion"]
+            # Safely calculate total tokens from the utility
+            u1 = response_data_r1["usage"]
+            u2 = response_data_r2["usage"]
+            p_tokens = (u1.prompt_tokens if u1 else 0) + (u2.prompt_tokens if u2 else 0)
+            c_tokens = (u1.completion_tokens if u1 else 0) + (u2.completion_tokens if u2 else 0)
+            
+            execution_log["tokens"]["prompt"] = p_tokens
+            execution_log["tokens"]["completion"] = c_tokens
+            execution_log["tokens"]["total"] = p_tokens + c_tokens
             
             # Generate the unified output
             md_output = self._generate_markdown_report(r1_data, r2_data, avg_a, avg_b, gt_label, gen_label, guessed_correctly)
@@ -196,11 +207,12 @@ class EvaluationPipeline:
 
             execution_log["status"] = "success"
             print(f"✅ Evaluation complete. Guessed GT correctly? {guessed_correctly}")
-            print(f"   GT Score: {avg_a if is_gt_A else avg_b}/10 | Gen Score: {avg_b if is_gt_A else avg_a}/10\n")
+            print(f"    GT Score: {avg_a if is_gt_A else avg_b:.2f}/10 | Gen Score: {avg_b if is_gt_A else avg_a:.2f}/10")
+            print(f"    Tokens Used: Prompt = {p_tokens} | Completion = {c_tokens} | Total = {p_tokens + c_tokens}\n")
 
         except Exception as e:
             execution_log["error_message"] = str(e)
-            print(f"[X] API Error for {case_id}: {e}\n")
+            print(f"    [X] API Error for {case_id}: {e}\n")
 
         finally:
             self._save_log(log_output_path, execution_log, start_time)

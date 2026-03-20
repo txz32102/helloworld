@@ -1,4 +1,4 @@
-from .pubmed_tools import search_pubmed, fetch_ama_citation
+from .pubmed_tools import search_pubmed, fetch_ama_citations
 from .clingen_tools import search_clingen_by_keyword, fetch_clingen_variant_data
 from .medgemma_tools import analyze_radiology_image
 
@@ -37,21 +37,25 @@ PUBMED_TOOL_SCHEMA = {
 FETCH_CITATION_SCHEMA = {
     "type": "function",
     "function": {
-        "name": "fetch_ama_citation",
+        "name": "fetch_ama_citations", # Updated to plural to match the new function name
         "description": (
-            "Given a DOI (Digital Object Identifier) obtained from the search_pubmed tool, "
-            "this tool returns the perfectly formatted AMA (American Medical Association) citation string. "
+            "Given a list of DOIs (Digital Object Identifiers) obtained from the search_pubmed tool, "
+            "this tool returns perfectly formatted, sequentially numbered AMA (American Medical Association) citation strings. "
+            "You can pass a single DOI or multiple DOIs at once. "
             "You MUST use this tool to build your References section to ensure perfect formatting."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "doi": {
-                    "type": "string",
-                    "description": "The exact DOI of the paper (e.g., '10.1001/jama.2023.12345')."
+                "dois": { # Changed from 'doi' to 'dois'
+                    "type": "array", # Changed type to array so it can accept a list
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "A list of exact DOIs for the papers (e.g., ['10.1001/jama.2023.1', '10.1056/NEJMoa123']). Do not include URLs."
                 }
             },
-            "required": ["doi"]
+            "required": ["dois"]
         }
     }
 }
@@ -136,7 +140,7 @@ AVAILABLE_TOOLS = {
     "search_clingen_by_keyword": search_clingen_by_keyword,
     "fetch_clingen_variant_data": fetch_clingen_variant_data,
     "analyze_radiology_image": analyze_radiology_image,
-    "fetch_ama_citation": fetch_ama_citation
+    "fetch_ama_citations": fetch_ama_citations
 }
 
 TOOL_SCHEMAS = [

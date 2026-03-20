@@ -3,11 +3,10 @@ import random
 import time
 from datetime import datetime
 import glob
-import argparse
 import json
 import xml.etree.ElementTree as ET
 import pubmed_parser as pp
-from .utils import setup_proxy, get_openai_client, extract_json_from_text
+from .utils import get_openai_client, extract_json_from_text, generate_llm_response
 
 class AtomsExtractorPipeline:
     def __init__(self, data_dir: str, out_dir: str, num_folders: int, model_id: str, included_sections: list, char_limit: int=100000, seed: int=42):
@@ -226,21 +225,27 @@ class AtomsExtractorPipeline:
         start_time = time.time()
 
         try:
-            # 1. Call LLM
-            response = self.client.chat.completions.create(
+            # 1. Call LLM using your new Streaming Utility
+            print(f"    [*] Extracting data (streaming)... ", end="", flush=True)
+            response_data = generate_llm_response(
+                client=self.client,
                 model=self.model_id,
                 messages=[{"role": "user", "content": prompt}],
+                stream=True, # Streaming is ON
+                stream_options={"include_usage": True},
                 temperature=0.1
             )
-            
-            # 2. Capture Raw Outputs and Tokens immediately
-            content = response.choices[0].message.content
-            usage = response.usage
+            print() # Print newline after the stream finishes
+
+            # 2. Capture Raw Outputs and Tokens immediately from the utility dictionary
+            content = response_data["content"]
+            usage = response_data["usage"]
             
             execution_log["raw_response"] = content
-            execution_log["tokens"]["prompt"] = usage.prompt_tokens
-            execution_log["tokens"]["completion"] = usage.completion_tokens
-            execution_log["tokens"]["total"] = usage.total_tokens
+            if usage:
+                execution_log["tokens"]["prompt"] = usage.prompt_tokens
+                execution_log["tokens"]["completion"] = usage.completion_tokens
+                execution_log["tokens"]["total"] = usage.total_tokens
 
             # 3. Parse JSON using the shared utility function
             data = extract_json_from_text(content)
@@ -263,7 +268,8 @@ class AtomsExtractorPipeline:
                 # Mark as success
                 execution_log["status"] = "success"
                 print(f"    [+] {folder_id}: Extracted and saved to {case_dir}")
-                print(f"Tokens - Total: {usage.total_tokens} | Time: {time.time() - start_time:.2f}s")
+                total_tokens = usage.total_tokens if usage else "Unknown"
+                print(f"    Tokens - Total: {total_tokens} | Time: {time.time() - start_time:.2f}s")
                 
             else:
                 error_msg = "Could not find valid JSON in LLM response."
