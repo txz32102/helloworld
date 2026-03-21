@@ -155,7 +155,7 @@ class EvaluationPipeline:
                 messages=[{"role": "user", "content": r1_payload}],
                 stream=True,
                 stream_options={"include_usage": True},
-                temperature=0.2,
+                temperature=0.1,
                 response_format={ "type": "json_object" } # Passed seamlessly to OpenAI
             )
             r1_data = json.loads(response_data_r1["content"])

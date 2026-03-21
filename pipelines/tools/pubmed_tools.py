@@ -52,43 +52,75 @@ def search_pubmed(
     execution_log: dict = None, 
     **kwargs
 ) -> str:
-    """Searches PubMed for recent medical literature using an API key if available."""
+    """Searches PubMed for recent medical literature, with automatic query relaxation."""
     
     exclude_id = execution_log.get("case_id") if execution_log else None
     if exclude_id:
         print(f"    [!] Internal Tool Logic priming to mask Ground Truth (PMID: {exclude_id})")
 
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
-    
-    # Retrieve the API key from the OS environment
     api_key = os.environ.get("NCBI_API_KEY")
     
+    # ---------------------------------------------------------
+    # IMPROVEMENT 1: Strip problematic trigger words like "DOI"
+    # ---------------------------------------------------------
+    clean_query = re.sub(r'\b(doi|pmid)\b', '', query, flags=re.IGNORECASE).strip()
+    # Remove extra spaces left behind
+    clean_query = re.sub(r'\s+', ' ', clean_query)
+    
+    # ---------------------------------------------------------
+    # IMPROVEMENT 2: The Halving/Relaxation Loop
+    # ---------------------------------------------------------
+    words = clean_query.split()
+    pmids = []
+    
     try:
-        search_url = f"{base_url}/esearch.fcgi"
-        search_params = {
-            "db": "pubmed",
-            "term": query,
-            "retmode": "json",
-            "retmax": max_results + 2, 
-            "sort": "date"  
-        }
-        
-        # Inject API key if it exists
-        if api_key:
-            search_params["api_key"] = api_key
-
-        search_response = requests.get(search_url, params=search_params, timeout=10)
-        search_response.raise_for_status()
-        pmids = search_response.json().get("esearchresult", {}).get("idlist", [])
-        
-        if exclude_id and exclude_id in pmids:
-            pmids.remove(exclude_id)
+        while words:
+            current_query = " ".join(words)
+            search_url = f"{base_url}/esearch.fcgi"
+            search_params = {
+                "db": "pubmed",
+                "term": current_query,
+                "retmode": "json",
+                "retmax": max_results + 2, 
+                "sort": "date"  
+            }
             
-        pmids = pmids[:max_results]
-        
-        if not pmids:
-            return f"No results found on PubMed for query: '{query}'"
+            if api_key:
+                search_params["api_key"] = api_key
 
+            search_response = requests.get(search_url, params=search_params, timeout=10)
+            search_response.raise_for_status()
+            
+            pmids = search_response.json().get("esearchresult", {}).get("idlist", [])
+            
+            if exclude_id and exclude_id in pmids:
+                pmids.remove(exclude_id)
+                
+            pmids = pmids[:max_results]
+            
+            # If we found results, break out of the loop!
+            if pmids:
+                # Optional: Print to console so you can see it working
+                if len(words) < len(clean_query.split()):
+                    print(f"    [+] Query relaxed successfully to: '{current_query}'")
+                break
+            
+            # If no results, halve the list of words for the next attempt
+            if len(words) == 1:
+                break  # Can't reduce any further
+                
+            print(f"    [-] No results for '{current_query}'. Halving keywords...")
+            # Keep the first half of the words (usually the most important subject terms)
+            words = words[:max(1, len(words) // 2)]
+
+        # If it STILL fails after halving all the way down to 1 word
+        if not pmids:
+            return f"No results found on PubMed for query: '{query}' (even after reducing keywords)."
+
+        # ---------------------------------------------------------
+        # THE FETCH LOGIC (Proceeds normally since we now have PMIDs)
+        # ---------------------------------------------------------
         fetch_url = f"{base_url}/efetch.fcgi"
         fetch_params = {
             "db": "pubmed",
@@ -96,7 +128,6 @@ def search_pubmed(
             "retmode": "xml" 
         }
         
-        # Inject API key for the fetch request as well
         if api_key:
             fetch_params["api_key"] = api_key
 

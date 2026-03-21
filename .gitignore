@@ -3,3 +3,4 @@ helloworld.egg-info
 log
 data/*
 !data/README.md
+demo_data

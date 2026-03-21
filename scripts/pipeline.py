@@ -20,10 +20,14 @@ class DualLogger:
         self.terminal.flush()
         self.log.flush()
 
+
+model_id = 'gpt-5'
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+data_dir = "demo_data"
+out_dir = f"log/pipeline_{model_id}/{timestamp}"
 os.makedirs("log", exist_ok=True)
-os.makedirs(f"log/pipelines/{timestamp}", exist_ok=True)
-log_filepath = os.path.join(f"log/pipelines/{timestamp}", f"pipeline_execution.log")
+os.makedirs(f"log/pipeline_{model_id}/{timestamp}", exist_ok=True)
+log_filepath = os.path.join(f"log/pipeline_{model_id}/{timestamp}", f"{model_id}_pipeline_execution.log")
 
 sys.stdout = DualLogger(log_filepath)
 sys.stderr = sys.stdout  # This ensures error tracebacks are also logged
@@ -40,15 +44,11 @@ from pipelines.convertion import PDFConversionPipeline
 
 PROXY = "http://127.0.0.1:7890"
 setup_proxy(PROXY)
-model_id = 'gpt-4.1'
-
-data_dir = "demo_data"
-out_dir = f"log/pipelines/{timestamp}"
 
 extractor = AtomsExtractorPipeline(
     data_dir=data_dir,
     out_dir=out_dir,
-    num_folders=2,
+    num_folders=20,
     model_id=model_id,
     included_sections=["authors", "year", "figures", "tables", "citations"]
 )

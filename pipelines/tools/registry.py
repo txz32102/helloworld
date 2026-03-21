@@ -109,9 +109,14 @@ MEDGEMMA_TOOL_SCHEMA = {
     "function": {
         "name": "analyze_radiology_image",
         "description": (
-            "Analyzes a medical image (X-ray, CT, MRI, histology) to identify notable clinical findings. "
-            "If the image is a composite figure (e.g., panels A, B, C), this tool automatically detects and splits it, "
-            "returning a separate analysis for each sub-panel. Use this to understand the provided image context."
+            "Analyzes specialized medical images to identify notable clinical findings. "
+            "CRITICAL USAGE GUIDELINES: "
+            "1. MODALITY LIMIT: Only use this tool for CT, MRI, X-ray, and histology images. Do not use for general charts or photos. "
+            "2. NATIVE VISION FIRST: You have your own vision capabilities. Use this tool carefully as a supplemental expert opinion. "
+            "3. COMPOSITE IMAGE WARNING: This tool attempts to auto-split composite figures (e.g., panels A, B, C). However, "
+            "the returned panels (e.g., 'panel_1', 'panel_2') are sorted by a basic layout algorithm and may NOT perfectly map to the original A/B/C labels. "
+            "4. CLUTTERED LAYOUTS: If the sub-figures in a composite image are aligned extremely close together without clear whitespace, "
+            "the splitting tool will fail. In those cases, rely entirely on your own native vision to analyze the image."
         ),
         "parameters": {
             "type": "object",

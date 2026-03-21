@@ -4,6 +4,7 @@ import json
 import base64
 from openai import OpenAI
 
+
 def setup_proxy(proxy_url: str):
     """
     Sets up the environment proxy variables globally.
@@ -56,11 +57,31 @@ def finalize_prompt(prompt_text: str) -> str:
     
     return cleaned.strip()
 
-def generate_llm_response(client: OpenAI, model: str, messages: list, stream: bool = False, **kwargs) -> dict:
+def generate_llm_response(client, model: str, messages: list, stream: bool = False, **kwargs) -> dict:
     """
     Advanced utility to handle OpenAI calls with an easy toggle for streaming.
     Returns a normalized dictionary containing "content", "tool_calls", and "usage".
     """
+    
+    # 1. Determine if the model strictly rejects temperature/sampling parameters
+    # Catches o1, o3, and gpt-5, BUT explicitly allows gpt-5.4 and 'chat' variants
+    is_temp_unsupported = (
+        model.startswith(("o1", "o3", "gpt-5")) 
+        and not model.startswith("gpt-5.4") 
+        and "chat" not in model
+    )
+
+    if is_temp_unsupported:
+        # Remove unsupported sampling parameters silently
+        unsupported_params = ["temperature", "top_p", "presence_penalty", "frequency_penalty", "logprobs", "logit_bias"]
+        for param in unsupported_params:
+            kwargs.pop(param, None)
+            
+        # Reasoning models strictly require 'max_completion_tokens' instead of 'max_tokens'
+        if "max_tokens" in kwargs:
+            kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
+
+    # 2. Make the API Call
     response = client.chat.completions.create(
         model=model,
         messages=messages,
@@ -68,7 +89,7 @@ def generate_llm_response(client: OpenAI, model: str, messages: list, stream: bo
         **kwargs
     )
 
-    # 1. Handle Non-Streaming
+    # 3. Handle Non-Streaming
     if not stream:
         msg = response.choices[0].message
         formatted_tools = None
@@ -86,7 +107,7 @@ def generate_llm_response(client: OpenAI, model: str, messages: list, stream: bo
             "usage": response.usage
         }
 
-    # 2. Handle Streaming
+    # 4. Handle Streaming
     collected_content = ""
     tool_calls_dict = {}
     final_usage = None
