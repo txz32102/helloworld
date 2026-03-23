@@ -59,8 +59,8 @@ def finalize_prompt(prompt_text: str) -> str:
 
 def generate_llm_response(client, model: str, messages: list, stream: bool = False, **kwargs) -> dict:
     """
-    Advanced utility to handle OpenAI calls with an easy toggle for streaming.
-    Returns a normalized dictionary containing "content", "tool_calls", and "usage".
+    Advanced utility to handle OpenAI and Qwen calls with an easy toggle for streaming.
+    Returns a normalized dictionary containing "content", "reasoning_content", "tool_calls", and "usage".
     """
     
     # 1. Determine if the model strictly rejects temperature/sampling parameters
@@ -81,7 +81,11 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
         if "max_tokens" in kwargs:
             kwargs["max_completion_tokens"] = kwargs.pop("max_tokens")
 
-    # 2. Make the API Call
+    # 2. Inject stream_options for token tracking (Required for Qwen/DashScope)
+    if stream and "stream_options" not in kwargs:
+        kwargs["stream_options"] = {"include_usage": True}
+
+    # 3. Make the API Call
     response = client.chat.completions.create(
         model=model,
         messages=messages,
@@ -89,11 +93,16 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
         **kwargs
     )
 
-    # 3. Handle Non-Streaming
+    # 4. Handle Non-Streaming
     if not stream:
-        msg = response.choices[0].message
+        # Use getattr to safely handle unexpected response structures
+        msg = response.choices[0].message if getattr(response, 'choices', None) else None
+        
+        if not msg:
+            return {"content": "", "reasoning_content": "", "tool_calls": None, "usage": None}
+
         formatted_tools = None
-        if msg.tool_calls:
+        if getattr(msg, 'tool_calls', None):
             # Convert objects to dicts to match streaming format
             formatted_tools = [{
                 "id": tc.id,
@@ -103,41 +112,56 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
             
         return {
             "content": msg.content or "",
+            "reasoning_content": getattr(msg, 'reasoning_content', ""), # Captures Qwen thinking
             "tool_calls": formatted_tools,
-            "usage": response.usage
+            "usage": getattr(response, 'usage', None)
         }
 
-    # 4. Handle Streaming
+    # 5. Handle Streaming
     collected_content = ""
+    collected_reasoning = ""
     tool_calls_dict = {}
     final_usage = None
+    started_final_answer = False
 
     for chunk in response:
-        # Track token usage
-        if hasattr(chunk, 'usage') and chunk.usage:
+        # Track token usage (usually sent in the final chunk)
+        if getattr(chunk, 'usage', None):
             final_usage = chunk.usage
 
-        if not chunk.choices:
+        if not getattr(chunk, 'choices', None) or len(chunk.choices) == 0:
             continue
 
         delta = chunk.choices[0].delta
 
-        # Accumulate Text
-        if delta.content:
-            collected_content += delta.content
-            print(delta.content, end="", flush=True)
+        # A. Accumulate Reasoning (Qwen/Reasoning models)
+        reasoning = getattr(delta, 'reasoning_content', None)
+        if reasoning:
+            collected_reasoning += reasoning
+            # Optional: Print thinking process in gray (ANSI escape code)
+            print(f"\033[90m{reasoning}\033[0m", end="", flush=True)
 
-        # Accumulate Tool Calls
-        if delta.tool_calls:
+        # B. Accumulate Content (Standard text)
+        content = getattr(delta, 'content', None)
+        if content:
+            if collected_reasoning and not started_final_answer:
+                print("\n\n✅ Final Answer:\n" + "-"*30)
+                started_final_answer = True
+            
+            collected_content += content
+            print(content, end="", flush=True)
+
+        # C. Accumulate Tool Calls
+        if getattr(delta, 'tool_calls', None):
             for tc in delta.tool_calls:
                 idx = tc.index
                 if idx not in tool_calls_dict:
                     tool_calls_dict[idx] = {
                         "id": tc.id,
                         "type": "function",
-                        "function": {"name": tc.function.name or "", "arguments": ""}
+                        "function": {"name": getattr(tc.function, 'name', "") or "", "arguments": ""}
                     }
-                if tc.function.arguments:
+                if tc.function and getattr(tc.function, 'arguments', None):
                     tool_calls_dict[idx]["function"]["arguments"] += tc.function.arguments
 
     # Format tool calls into a list
@@ -147,6 +171,7 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
 
     return {
         "content": collected_content,
+        "reasoning_content": collected_reasoning,
         "tool_calls": formatted_tool_calls,
         "usage": final_usage
     }

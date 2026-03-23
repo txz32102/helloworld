@@ -21,7 +21,7 @@ class DualLogger:
         self.log.flush()
 
 
-model_id = 'gpt-5'
+model_id = 'gpt-4.1'
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 data_dir = "demo_data"
 out_dir = f"log/pipeline_{model_id}/{timestamp}"

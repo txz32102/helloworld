@@ -12,7 +12,7 @@ from .utils import get_openai_client, finalize_prompt, generate_llm_response
 from .tools.registry import TOOL_SCHEMAS, AVAILABLE_TOOLS
 
 class GenerationPipeline:
-    def __init__(self, working_dir: str, model_id: str):
+    def __init__(self, working_dir: str, model_id: str, client=None):
         """
         Initializes the pipeline to generate medical journal articles from JSON atoms.
         Note: Proxy should be set globally before initializing this class.
@@ -20,8 +20,10 @@ class GenerationPipeline:
         self.working_dir = working_dir
         self.model_id = model_id
         
-        # 1. OpenAI Client Initialization
-        self.client = get_openai_client()
+        if client:
+            self.client = client
+        else:
+            self.client = get_openai_client()
 
     def _encode_image(self, image_path: str) -> str:
         with open(image_path, "rb") as image_file:

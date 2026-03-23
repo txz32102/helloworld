@@ -9,10 +9,11 @@ import pubmed_parser as pp
 from .utils import get_openai_client, extract_json_from_text, generate_llm_response
 
 class AtomsExtractorPipeline:
-    def __init__(self, data_dir: str, out_dir: str, num_folders: int, model_id: str, included_sections: list, char_limit: int=100000, seed: int=42):
+    # Add 'client=None' to the end of your parameters
+    def __init__(self, data_dir: str, out_dir: str, num_folders: int, model_id: str, included_sections: list, char_limit: int=100000, seed: int=42, client=None):
         """
-        Initializes the pipeline with configuration and sets up the OpenAI client.
-        Note: Proxy should be set globally before initializing this class.
+        Initializes the pipeline with configuration. 
+        Accepts an optional injected client; defaults to standard OpenAI.
         """
         self.data_dir = data_dir
         self.out_dir = out_dir
@@ -21,14 +22,17 @@ class AtomsExtractorPipeline:
         self.char_limit = char_limit
         self.model_id = model_id
         self.included_sections = included_sections
-        self.extracted_headers = [] # Tracks the actual structural headers found in the text
+        self.extracted_headers = [] 
         
         # 1. Seed & Environment Setup
         random.seed(self.seed)
         os.makedirs(self.out_dir, exist_ok=True)
         
-        # 2. OpenAI Client Initialization
-        self.client = get_openai_client()
+        # 2. Assign injected client, or fallback to default OpenAI
+        if client:
+            self.client = client
+        else:
+            self.client = get_openai_client()
 
     def _extract_text_pubmed_parser(self, xml_path: str) -> str:
         """

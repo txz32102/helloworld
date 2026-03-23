@@ -8,7 +8,7 @@ from datetime import datetime
 from .utils import get_openai_client, encode_image, generate_llm_response
 
 class EvaluationPipeline:
-    def __init__(self, base_dir: str, model_id: str):
+    def __init__(self, base_dir: str, model_id: str, client=None):
         """
         Initializes the pipeline to evaluate generated case reports.
         Note: Proxy should be set globally before initializing this class.
@@ -17,7 +17,10 @@ class EvaluationPipeline:
         self.model_id = model_id
         
         # 1. OpenAI Client Initialization
-        self.client = get_openai_client()
+        if client:
+            self.client = client
+        else:
+            self.client = get_openai_client()
 
     def evaluate_case_report(self, case_id: str):
         """
