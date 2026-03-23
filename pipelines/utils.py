@@ -125,24 +125,29 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
     started_final_answer = False
 
     for chunk in response:
-        # Track token usage (usually sent in the final chunk)
-        if getattr(chunk, 'usage', None):
-            final_usage = chunk.usage
+        # 🚨 CRITICAL FIX: Convert the strict Pydantic object to a raw dictionary 
+        # so the SDK stops hiding non-standard fields like 'reasoning_content'!
+        chunk_dict = chunk.model_dump()
 
-        if not getattr(chunk, 'choices', None) or len(chunk.choices) == 0:
+        # Track token usage 
+        if chunk_dict.get('usage'):
+            final_usage = chunk_dict['usage']
+
+        if not chunk_dict.get('choices'):
             continue
 
-        delta = chunk.choices[0].delta
+        delta = chunk_dict['choices'][0].get('delta', {})
 
         # A. Accumulate Reasoning (Qwen/Reasoning models)
-        reasoning = getattr(delta, 'reasoning_content', None)
+        # Check both 'reasoning_content' and 'reasoning' just in case vLLM changes the key
+        reasoning = delta.get('reasoning_content', "") or delta.get('reasoning', "")
         if reasoning:
             collected_reasoning += reasoning
-            # Optional: Print thinking process in gray (ANSI escape code)
+            # Print thinking process in gray (ANSI escape code)
             print(f"\033[90m{reasoning}\033[0m", end="", flush=True)
 
         # B. Accumulate Content (Standard text)
-        content = getattr(delta, 'content', None)
+        content = delta.get('content', "")
         if content:
             if collected_reasoning and not started_final_answer:
                 print("\n\n✅ Final Answer:\n" + "-"*30)
@@ -151,18 +156,21 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
             collected_content += content
             print(content, end="", flush=True)
 
-        # C. Accumulate Tool Calls
-        if getattr(delta, 'tool_calls', None):
-            for tc in delta.tool_calls:
-                idx = tc.index
+        # C. Accumulate Tool Calls (Updated for dictionary access)
+        if delta.get('tool_calls'):
+            for tc in delta['tool_calls']:
+                idx = tc.get('index')
                 if idx not in tool_calls_dict:
                     tool_calls_dict[idx] = {
-                        "id": tc.id,
+                        "id": tc.get('id', ""),
                         "type": "function",
-                        "function": {"name": getattr(tc.function, 'name', "") or "", "arguments": ""}
+                        "function": {"name": tc.get('function', {}).get('name', ""), "arguments": ""}
                     }
-                if tc.function and getattr(tc.function, 'arguments', None):
-                    tool_calls_dict[idx]["function"]["arguments"] += tc.function.arguments
+                
+                # Append arguments as they stream in
+                args = tc.get('function', {}).get('arguments', "")
+                if args:
+                    tool_calls_dict[idx]["function"]["arguments"] += args
 
     # Format tool calls into a list
     formatted_tool_calls = None
