@@ -82,13 +82,12 @@ class EvaluationPipeline:
             "You are an expert, highly critical medical reviewer evaluating two case reports (Report A and Report B). "
             "One is a human-written Ground Truth; the other is an AI generation. "
             "Evaluate BOTH strictly on a 1-10 scale across the following 5 criteria:\n\n"
-            "1. Citation Depth & Integration: Does the report feature detailed, comprehensive citations integrated heavily throughout the discussion to back up specific clinical claims? (LLMs often provide unnaturally short reference lists and sparse in-text citations).\n"
+            "1. Citation Depth & Integration: Does the report feature detailed, comprehensive citations integrated heavily throughout the discussion to back up specific clinical claims? (NOTE: Do NOT evaluate or penalize based on publication years. Do not flag recent citations as 'fake' or hallucinated simply because they may post-date your training data).\n"
             "2. Patient History & Timeline Nuances: Does it capture the 'messy reality' of patient care? Look for specific timelines (e.g., patient agreed to intervention after X days, discontinued meds due to Y) versus a flattened, generalized narrative.\n"
             "3. Clinical Coherence & Critical Omissions: Does it provide an in-depth discussion on pathophysiology, specific radiographic criteria, and complex anatomical specifics? (LLMs often omit granular multi-system findings and generalize conditions).\n"
-            "4. Image Description, Location & Order: Are the figures strategically placed in chronological order? Do the descriptions provide a comprehensive, multi-part breakdown (e.g., distinguishing 'a' and 'b' sections) of specific anatomical pathology?\n"
-            "5. Readability & Structure: Professional medical formatting and logical section transitions.\n\n"
-            "ABSOLUTE RULE ON IMAGES: The image filenames/paths are intentionally masked. DO NOT factor the filenames into your scores. "
-            "Judge them purely on logical sequence and granular textual integration.\n\n"
+            "4. Image Description & Logical Flow: Are the figures logically placed in the narrative? Do the descriptions provide a comprehensive, multi-part breakdown of specific anatomical pathology?\n"
+            "5. Readability & Clinical Structure: Logical flow and transition of clinical information.\n\n"
+            "ABSOLUTE RULE ON FORMATTING & IMAGES: The Ground Truth document was converted from XML to Markdown, which may have introduced structural artifacts, missing headers, or raw image filenames/paths. DO NOT penalize or factor markdown formatting glitches or raw filenames into your scores. Judge the reports purely on clinical substance, logical sequence, and granular textual integration.\n\n"
             "Output JSON format strictly:\n"
             "{\n"
             '  "scores": {\n'
@@ -122,16 +121,14 @@ class EvaluationPipeline:
             "You must aggressively hunt for the following specific LLM failure modes:\n"
             "- Flattened Timelines: Did the AI miss exact days, exact medication durations, or nuanced patient refusal/consent details?\n"
             "- Clinical Omissions: Did the AI summarize over complex radiographic criteria, precise anatomical measurements, or multi-system secondary diagnoses?\n"
-            "- Shallow Citations: Did the AI fail to map specific literature to specific pathophysiological claims made in the Ground Truth?\n"
+            "- Shallow Citations: Did the AI fail to map specific literature to specific pathophysiological claims made in the Ground Truth? (NOTE: Ignore citation publication years entirely. Do not flag citations as hallucinations just because their dates exceed your training data).\n"
             "- Weak Image Integration: Did the AI fail to capture the granular breakdown of multi-part figures?\n\n"
-            "ABSOLUTE RULE ON IMAGES: You MUST NOT mention the image name, file path, or hash (e.g., 'IMG_4EF82C3') anywhere in your output. "
-            "We care strictly about the location and order of the images within the text, not their filenames. "
-            "If an image is misplaced or poorly described, refer to it functionally (e.g., 'The first figure', 'Figure 1').\n\n"
+            "ABSOLUTE RULE ON FORMATTING & IMAGES: The Ground Truth underwent an XML-to-Markdown conversion, resulting in potential formatting artifacts and exposed image filenames/paths. You MUST NOT flag markdown formatting errors or mention image filenames (e.g., 'IMG_4EF82C3') anywhere in your output. If an image is misplaced or poorly described, refer to it functionally (e.g., 'The first figure', 'Figure 1') and focus strictly on the clinical text integration, not the conversion formatting.\n\n"
             "Output JSON format strictly:\n"
             "{\n"
             '  "hallucinations": [{"issue": "False detail added", "severity": "High/Medium/Low"}],\n'
             '  "omissions": [{"issue": "Critical clinical or timeline detail missing", "severity": "High/Medium/Low"}],\n'
-            '  "formatting_issues": ["List illogical structural placements, missing citation mapping, or weak image descriptions. NEVER mention image filenames."],\n'
+            '  "formatting_issues": ["List illogical structural placements or weak image descriptions. NEVER mention image filenames or XML-to-MD conversion artifacts."],\n'
             '  "improvement_advice": "Specific prompt engineering advice to fix these exact errors."\n'
             "}"
         )

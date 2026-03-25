@@ -114,7 +114,7 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
             "content": msg.content or "",
             "reasoning_content": getattr(msg, 'reasoning_content', ""), # Captures Qwen thinking
             "tool_calls": formatted_tools,
-            "usage": getattr(response, 'usage', None)
+            "usage": getattr(response, 'usage', None) # Returns the original Usage object
         }
 
     # 5. Handle Streaming
@@ -125,13 +125,13 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
     started_final_answer = False
 
     for chunk in response:
-        # 🚨 CRITICAL FIX: Convert the strict Pydantic object to a raw dictionary 
-        # so the SDK stops hiding non-standard fields like 'reasoning_content'!
-        chunk_dict = chunk.model_dump()
+        # 🚨 FIX: Grab usage from the original chunk BEFORE converting it to a dictionary.
+        # This keeps it as an OpenAI object so `usage.prompt_tokens` works in your main script!
+        if getattr(chunk, 'usage', None):
+            final_usage = chunk.usage
 
-        # Track token usage 
-        if chunk_dict.get('usage'):
-            final_usage = chunk_dict['usage']
+        # Now safely convert the rest to a dictionary to find hidden reasoning tokens
+        chunk_dict = chunk.model_dump()
 
         if not chunk_dict.get('choices'):
             continue
@@ -139,7 +139,6 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
         delta = chunk_dict['choices'][0].get('delta', {})
 
         # A. Accumulate Reasoning (Qwen/Reasoning models)
-        # Check both 'reasoning_content' and 'reasoning' just in case vLLM changes the key
         reasoning = delta.get('reasoning_content', "") or delta.get('reasoning', "")
         if reasoning:
             collected_reasoning += reasoning
@@ -156,7 +155,7 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
             collected_content += content
             print(content, end="", flush=True)
 
-        # C. Accumulate Tool Calls (Updated for dictionary access)
+        # C. Accumulate Tool Calls
         if delta.get('tool_calls'):
             for tc in delta['tool_calls']:
                 idx = tc.get('index')
