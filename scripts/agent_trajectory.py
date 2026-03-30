@@ -31,10 +31,9 @@ class DualLogger:
         self.log.flush()
 
 qwen_client = OpenAI(
-    base_url="http://localhost:9501/v1",
-    api_key="EMPTY" 
+    api_key=os.environ.get("QWEN_API_KEY"),
+    base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
 )
-
 
 # gpt-4.1, gpt-5.4, Qwen/Qwen3.5-27B-FP8
 openai_model_id = 'Qwen/Qwen3.5-27B-FP8'
