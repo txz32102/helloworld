@@ -37,13 +37,13 @@ qwen_client = OpenAI(
 
 
 # gpt-4.1, gpt-5.4, Qwen/Qwen3.5-27B-FP8
-openai_model_id = 'Qwen/Qwen3.5-27B-FP8'
+openai_model_id = 'gpt-4.1'
 
 # qwen3.5-27b-fp8
-cleaned_model_id = "qwen3.5-27b-fp8"
+cleaned_model_id = "gpt-4.1"
 qwen_model_id = 'Qwen/Qwen3.5-27B-FP8'
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-timestamp = "20260326_143348"
+timestamp = "20260401_172328"
 data_dir = "demo_data"
 out_dir = f"log/pipeline_{cleaned_model_id}/{timestamp}"
 os.makedirs("log", exist_ok=True)
@@ -79,7 +79,7 @@ setup_proxy(PROXY)
 generator = GenerationPipeline(
     working_dir=out_dir, 
     model_id=openai_model_id,
-    client=qwen_client,
+    # client=qwen_client,
 )
 generator.run()
 
@@ -91,8 +91,8 @@ md_converter.run()
 
 evaluator = EvaluationPipeline(
     base_dir=out_dir, 
-    model_id=qwen_model_id,
-    client=qwen_client,
+    model_id=openai_model_id,
+    # client=qwen_client,
 )
 evaluator.run()
 

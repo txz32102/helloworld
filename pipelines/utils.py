@@ -182,3 +182,26 @@ def generate_llm_response(client, model: str, messages: list, stream: bool = Fal
         "tool_calls": formatted_tool_calls,
         "usage": final_usage
     }
+    
+def format_clinical_section(section_data) -> str:
+    """Flattens raw JSON data into clean, readable Markdown bullets."""
+    if not section_data:
+        return "Information not provided in the case record."
+    
+    if isinstance(section_data, str):
+        return section_data.strip()
+        
+    if isinstance(section_data, list):
+        # If it's a list of dicts or strings, bullet them out
+        clean_items = []
+        for item in section_data:
+            if isinstance(item, dict):
+                clean_items.append(", ".join([f"{k}: {v}" for k, v in item.items()]))
+            else:
+                clean_items.append(str(item).strip())
+        return "\n".join([f"- {item}" for item in clean_items])
+        
+    if isinstance(section_data, dict):
+        return "\n".join([f"- **{k.capitalize()}**: {v}" for k, v in section_data.items()])
+        
+    return str(section_data).strip()
