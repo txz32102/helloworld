@@ -281,5 +281,3 @@ class GenerationPipeline:
         json_files = glob.glob(os.path.join(self.working_dir, "*", "*_atoms.json"))
         for path in json_files:
             self.process_case(path)
-
-# /home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_gpt-4.1/20260401_083212/41654903/41654903_atoms.json

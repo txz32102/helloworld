@@ -90,11 +90,14 @@ def main():
     parser.add_argument(
         "--folder", 
         type=str, 
-        default="/home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_qwen3.5-27b-fp8/20260326_143348"
+        default="/home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_gpt-4.1/20260401_083212"
         
         # qwen3.5-27b api path
         # /home/data1/musong/workspace/2026/03/22/log/pipeline_qwen3.5-27b/20260322_173947
         
+        # gpt4.1 multi step
+        # /home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_gpt-4.1/20260401_083212
+
         # gpt4.1 path
         # /home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_gpt-4.1/20260325_095032
         
