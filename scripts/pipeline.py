@@ -14,15 +14,30 @@ class DualLogger:
         self.log = open(filepath, "a", encoding="utf-8")
         # Pre-compile the regex to strip ANSI escape codes efficiently
         self.ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        
+        # Track if the last message was a progress bar update
+        self.is_tqdm = False 
 
     def write(self, message):
         # 1. Write the raw message (with color codes) to the terminal
         self.terminal.write(message)
         
-        # 2. Strip the color codes to create clean text
+        # 2. Check for tqdm's carriage return '\r'
+        if '\r' in message:
+            self.is_tqdm = True
+            return  # Skip writing progress bar updates to the log
+            
+        # 3. Prevent stray newlines in the log after the progress bar finishes
+        if self.is_tqdm and message == '\n':
+            self.is_tqdm = False
+            return
+            
+        self.is_tqdm = False
+        
+        # 4. Strip the color codes to create clean text
         clean_message = self.ansi_escape.sub('', message)
         
-        # 3. Write the clean text to the log file
+        # 5. Write the clean text to the log file
         self.log.write(clean_message)
         self.log.flush()  # Forces write to disk immediately
 
@@ -43,8 +58,8 @@ openai_model_id = 'gpt-4.1'
 cleaned_model_id = "gpt-4.1"
 qwen_model_id = 'Qwen/Qwen3.5-27B-FP8'
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-timestamp = "20260401_172328"
-data_dir = "demo_data"
+# timestamp = "20260401_172328"
+data_dir = "data/demo_two_data"
 out_dir = f"log/pipeline_{cleaned_model_id}/{timestamp}"
 os.makedirs("log", exist_ok=True)
 os.makedirs(f"log/pipeline_{cleaned_model_id}/{timestamp}", exist_ok=True)
@@ -66,20 +81,21 @@ from pipelines.convertion import PDFConversionPipeline
 PROXY = "http://127.0.0.1:7890"
 setup_proxy(PROXY)
 
-# extractor = AtomsExtractorPipeline(
-#     data_dir=data_dir,
-#     out_dir=out_dir,
-#     num_folders=20,
-#     model_id=qwen_model_id,
-#     client=qwen_client,
-#     included_sections=["authors", "year", "figures", "tables", "citations"]
-# )
-# extractor.run()
+extractor = AtomsExtractorPipeline(
+    data_dir=data_dir,
+    out_dir=out_dir,
+    num_folders=20,
+    model_id=openai_model_id,
+    # client=qwen_client,
+    included_sections=["authors", "year", "figures", "tables", "citations"]
+)
+extractor.run()
 
 generator = GenerationPipeline(
     working_dir=out_dir, 
     model_id=openai_model_id,
     # client=qwen_client,
+    mode='single'
 )
 generator.run()
 

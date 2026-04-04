@@ -12,7 +12,7 @@ from .utils import get_openai_client, finalize_prompt, generate_llm_response, fo
 from .tools.registry import TOOL_SCHEMAS, AVAILABLE_TOOLS
 
 class GenerationPipeline:
-    def __init__(self, working_dir: str, model_id: str, mode: str = "multi", client=None):
+    def __init__(self, working_dir: str, model_id: str, mode: str = "single", client=None):
         """
         Initializes the pipeline to generate medical journal articles from JSON atoms.
         :param mode: "single" for one-shot generation, "multi" for the 4-phase distillation pipeline.
@@ -83,19 +83,47 @@ class GenerationPipeline:
 
         return content_payload, image_map, virtual_ids_list
 
-    def _execute_llm_loop(self, messages: list, allowed_tools: list, case_data: dict, phase_name: str) -> dict:
+    def _execute_llm_loop(self, messages: list, allowed_tools: list, case_data: dict, phase_name: str, image_map: dict = None) -> dict:
         """Generic loop for handling LLM generation, tool calls, and thought extraction."""
+        phase_start_time = datetime.now()
+        
+        # 1. Dynamically extract the system prompt from the messages payload
+        system_prompt = next((msg["content"] for msg in messages if msg.get("role") == "system"), None)
+        
+        # NEW: Extract the user prompt, ignoring base64 image data
+        user_prompt_text = None
+        user_msg = next((msg["content"] for msg in messages if msg.get("role") == "user"), None)
+        
+        if isinstance(user_msg, list):
+            # Extract only the text payloads, skipping "image_url" dictionaries
+            text_parts = [item["text"] for item in user_msg if item.get("type") == "text"]
+            user_prompt_text = "\n".join(text_parts)
+        elif isinstance(user_msg, str):
+            # Fallback for standard string prompts
+            user_prompt_text = user_msg
+
+        # 2. Extract the image paths/filenames used in this phase
+        images_used = list(image_map.values()) if image_map else []
+
         phase_log = {
             "phase": phase_name,
+            "start_time": phase_start_time.isoformat(),
+            "end_time": None,
+            "system_prompt": system_prompt,  # <--- Logs the system instruction
+            "user_prompt": user_prompt_text, # <--- NEW: Logs the user instruction
+            "images_used": images_used,      # <--- Logs the local image filenames
+            "api_call_count": 0,  
             "turns": [],
             "final_output": None,
             "total_prompt_tokens": 0,
-            "total_comp_tokens": 0
+            "total_comp_tokens": 0,
+            "mapped_images": image_map or {}
         }
         
         print(f"\n    === Starting {phase_name} ===")
         
-        for turn in range(15):
+        for turn in range(10):
+            phase_log["api_call_count"] += 1  
             print(f"    [*] Turn {turn + 1}: Generating... ", end="", flush=True)
             
             response_data = generate_llm_response(
@@ -114,14 +142,16 @@ class GenerationPipeline:
                 phase_log["total_prompt_tokens"] += response_data["usage"].prompt_tokens
                 phase_log["total_comp_tokens"] += response_data["usage"].completion_tokens
 
-            raw_content = response_data["content"]
-            tool_calls = response_data["tool_calls"]
+            raw_content = response_data.get("content", "")
+            reasoning_content = response_data.get("reasoning_content", "") 
+            tool_calls = response_data.get("tool_calls", [])
             
-            thinking_process, clean_content = self._extract_thinking(raw_content)
+            extracted_thinking, clean_content = self._extract_thinking(raw_content)
+            final_thinking = reasoning_content if reasoning_content else extracted_thinking
 
             turn_log = {
                 "turn": turn + 1,
-                "thinking": thinking_process,
+                "thinking": final_thinking,
                 "content": clean_content,
                 "tool_calls": []
             }
@@ -130,6 +160,7 @@ class GenerationPipeline:
                 print(f"    [*] {phase_name} complete.")
                 phase_log["final_output"] = clean_content
                 phase_log["turns"].append(turn_log)
+                phase_log["end_time"] = datetime.now().isoformat() 
                 return phase_log
                 
             messages.append({
@@ -147,10 +178,8 @@ class GenerationPipeline:
                 
                 try:
                     function_args = json.loads(function_args_str)
-                    
-                    # Inject hidden context
                     function_args["case_data"] = case_data
-                    function_args["execution_log"] = phase_log # Optional context for tools
+                    function_args["execution_log"] = phase_log 
                     
                     log_args = {k: v for k, v in function_args.items() if k not in ["execution_log", "case_data"]}
                     tool_exec_log["arguments"] = log_args
@@ -181,6 +210,7 @@ class GenerationPipeline:
             
             phase_log["turns"].append(turn_log)
             
+        phase_log["end_time"] = datetime.now().isoformat() 
         return phase_log
 
     def _post_process_markdown(self, raw_markdown: str, image_map: dict) -> str:
@@ -238,7 +268,8 @@ class GenerationPipeline:
             {"role": "user", "content": content_payload}
         ]
 
-        log_data = self._execute_llm_loop(messages, TOOL_SCHEMAS, case_data, "Single_Step_Generation")
+        # Passed image_map here
+        log_data = self._execute_llm_loop(messages, TOOL_SCHEMAS, case_data, "Single_Step_Generation", image_map=image_map)
         final_markdown = self._post_process_markdown(log_data["final_output"], image_map)
         
         output_file = os.path.join(case_dir, f"{case_id}_generated.md")
@@ -248,89 +279,139 @@ class GenerationPipeline:
         return {"mapped_images": image_map, "execution": log_data}
 
     def process_case_multi(self, case_id: str, case_data: dict, source_dir: str, sections_str: str, case_dir: str) -> dict:
-        """Executes the multi-step (distillation) generation mode."""
+        """Executes the 3-step (Planning, Drafting, Refining) generation mode."""
         trajectory_log = {"mapped_images": {}, "phases": {}}
 
-        # PHASE 1: RESEARCH
+        # Ensure References section is included
+        if "References" not in sections_str and "Citations" not in sections_str:
+            sections_str += "\n- References"
+
+        # Extract atoms early so they can be used in the phases
         hist_str = format_clinical_section(case_data.get('history'))
         pres_str = format_clinical_section(case_data.get('presentation'))
         diag_str = format_clinical_section(case_data.get('diagnostics'))
         mgmt_str = format_clinical_section(case_data.get('management'))
         out_str = format_clinical_section(case_data.get('outcome'))
 
-        p1_prompt = f"""You are an expert medical researcher. Build a 'Research Dossier' for a clinical case report.
-        
-        Images provided: {{IMAGE_IDS}} (Total: {{NUM_IMAGES}})
-
-        <clinical_data>
-        <history>
-        {hist_str}
-        </history>
-        
-        <presentation>
-        {pres_str}
-        </presentation>
-        
-        <diagnostics>
-        {diag_str}
-        </diagnostics>
-        
-        <management>
-        {mgmt_str}
-        </management>
-        
-        <outcome>
-        {out_str}
-        </outcome>
-        </clinical_data>
-        
-        TASKS (STRICT NO MEMORY CITATIONS):
-        1. Assess Visuals: Use available imaging tools (e.g., `analyze_radiology_image`) to analyze the provided images.
-        2. Gather Literature: Use available search tools (e.g., `search_pubmed`) to find at least 10 standard-of-care references. 
-           *CRITICAL:* You must use strict PubMed search style (short keywords, MeSH terms, Boolean AND/OR). Do NOT use natural language sentences.
-        3. Deep Dive: Deploy any other relevant specialized tools (like ClinGen or other databases) if the specific case context demands it.
-        4. Format Citations: Process your findings through citation formatting tools (e.g., `fetch_ama_citations`) to get exact strings based on DOIs.
-        
-        Output a comprehensive 'Research Dossier' summarizing clinical findings, image insights, and a finalized list of EXACT citations. Do NOT write the paper yet."""
-        
+        # ------------------------------------------------------------------
+        # PHASE 1: PLANNING (Research + Outlining)
+        # ------------------------------------------------------------------
+        system_prompt = (
+            "Phase 1: The Planner. Gather external knowledge, format citations, and create a highly detailed structural outline. "
+            "Zero tolerance for hallucinations.\n\n"
+            "You are an expert medical researcher and architect. Your core objective is to build a comprehensive "
+            "'Strategic Plan & Outline' for a clinical case report destined for a high-impact peer-reviewed medical journal."
+        )
+        p1_prompt = f"""### Clinical Data
+            #### History
+            {hist_str}
+            #### Presentation
+            {pres_str}
+            #### Diagnostics
+            {diag_str}
+            #### Management
+            {mgmt_str}
+            #### Outcome
+            {out_str}
+            ---
+            ### TASKS (STRICT NO MEMORY CITATIONS)
+            1. **Assess Visuals:** Use available tools (e.g., `analyze_radiology_image`) to analyze the provided images. 
+            You have been provided with EXACTLY {{NUM_IMAGES}} images. Reference IDs: [{{IMAGE_IDS}}].
+            2. **Gather Literature:** Use search tools (e.g., `search_pubmed`, `fetch_ama_citations`) to compile a robust bibliography of exact citations based on DOIs.
+            3. **Structural Outline:** Synthesize the literature and clinical data into a detailed outline using EXACTLY these required sections:
+            {sections_str}
+            ### OUTLINE REQUIREMENTS
+            * Include bullet points for clinical claims.
+            * Explicitly note EXACTLY where each citation (e.g., [Citation 1]) will be anchored.
+            * Explicitly map EXACTLY where EVERY provided image (e.g., [Insert IMG_XXXXXX here]) will be placed to support the narrative.
+            """
+        # Payload preparation remains the same
         content_payload, image_map, virtual_ids = self._prepare_multimodal_payload(p1_prompt, source_dir)
         trajectory_log["mapped_images"] = image_map
-        
+
+        # 3. Message Assembly: Injecting the new system prompt
         p1_messages = [
-            {"role": "system", "content": "Phase 1: The Researcher. Gather external knowledge and format citations. Zero tolerance for hallucinations."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": content_payload}
         ]
-        p1_log = self._execute_llm_loop(p1_messages, TOOL_SCHEMAS, case_data, "Phase_1_Research")
-        trajectory_log["phases"]["phase_1"] = p1_log
-        research_dossier = p1_log["final_output"]
-
-        # PHASE 2: OUTLINING
-        p2_messages = [
-            {"role": "system", "content": "Phase 2: The Architect. Create a highly detailed structural outline."},
-            {"role": "user", "content": f"Based on the raw case data and Research Dossier, create a detailed outline.\n\nRequired Sections:\n{sections_str}\n\nDossier:\n{research_dossier}\n\nInclude bullet points for claims, and explicitly note where [Citation X] or [Figure Y] will be anchored to ensure broad medical context."}
-        ]
-        p2_log = self._execute_llm_loop(p2_messages, [], case_data, "Phase_2_Outlining")
-        trajectory_log["phases"]["phase_2"] = p2_log
-        outline = p2_log["final_output"]
-
-        # PHASE 3: DRAFTING
-        p3_messages = [
-            {"role": "system", "content": "Phase 3: The Writer. Draft the full academic manuscript in strict Markdown."},
-            {"role": "user", "content": f"Write the full manuscript (1500+ words) using authoritative, objective medical tone. No conversational filler or AI disclaimers.\n\nOutline:\n{outline}\n\nDossier:\n{research_dossier}\n\nCRITICAL: Embed EXACTLY {len(virtual_ids)} images using Markdown: ![Figure X](IMG_ID). Include the full References list at the end matching the Dossier exactly."}
-        ]
-        p3_log = self._execute_llm_loop(p3_messages, [], case_data, "Phase_3_Drafting")
-        trajectory_log["phases"]["phase_3"] = p3_log
-        draft = p3_log["final_output"]
-
-        # PHASE 4: REFINING
-        p4_messages = [
-            {"role": "system", "content": "Phase 4: The Editor. Polish the manuscript and ensure zero-omission of images and citations."},
-            {"role": "user", "content": f"Review this draft:\n{draft}\n\nEnsure perfect academic tone, no filler, ALL {len(virtual_ids)} images are embedded via standard Markdown, and all citations are used. Output ONLY the final perfected Markdown."}
-        ]
-        p4_log = self._execute_llm_loop(p4_messages, [], case_data, "Phase_4_Refining")
-        trajectory_log["phases"]["phase_4"] = p4_log
         
-        final_markdown = self._post_process_markdown(p4_log["final_output"], image_map)
+        p1_log = self._execute_llm_loop(p1_messages, TOOL_SCHEMAS, case_data, "Phase_1_Planning", image_map=image_map)
+        trajectory_log["phases"]["phase_1"] = p1_log
+        planning_doc = p1_log["final_output"]
+
+        # ------------------------------------------------------------------
+        # PHASE 2: DRAFTING
+        # ------------------------------------------------------------------
+        ids_string = ", ".join(virtual_ids) if virtual_ids else "None"
+        num_images = len(virtual_ids)
+        
+        p2_messages = [
+            {"role": "system", "content": "Phase 2: The Writer. Draft a full, publication-ready academic manuscript in strict Markdown."},
+            {"role": "user", "content": f"""You are an expert medical clinician and senior editor. Write the full manuscript based on the Strategic Plan & Outline provided below.
+
+Strategic Plan & Outline:
+{planning_doc}
+
+### CLINICAL AUTHENTICITY & FIDELITY RULES (CRITICAL) ###
+1. Zero Timeline Sanitization: Preserve the "messy reality" of the patient history (missed appointments, unrelated surgeries, specific intervals). Do NOT smooth over the timeline.
+2. Procedural Precision: Retain the exact clinical and mechanical terminology used in the source data.
+3. Granular Specifics: Include all specific statistical claims, precise anatomical measurements, and multi-system secondary diagnoses present in the raw atoms.
+
+### WRITING GUIDELINES & ACADEMIC STANDARDS ###
+1. Tone & Style: Authoritative, objective, and scholarly medical tone. Target 1500 to 2500 words.
+2. Mandatory Structure (STRICT): You MUST ONLY use the section headings provided below. Do NOT generate any other sections:
+{sections_str}
+
+3. Figure Integration: 
+   You have been provided with EXACTLY {num_images} images. Reference IDs: [{ids_string}].
+   Embed EVERY SINGLE IMAGE using this Markdown syntax:
+   ![Figure n](IMG_XXXXXX)
+   > **Figure n:** [Detailed clinical caption]
+
+Pure Markdown: Output the final report in strict Markdown format only. 
+No AI Disclaimers: Never mention that this text was generated by an AI. 
+No Conversational Filler: Provide only the medical report itself."""}
+        ]
+        p2_log = self._execute_llm_loop(p2_messages, [], case_data, "Phase_2_Drafting", image_map=image_map)
+        trajectory_log["phases"]["phase_2"] = p2_log
+        draft = p2_log["final_output"]
+
+        # ------------------------------------------------------------------
+        # PHASE 3: REFINING
+        # ------------------------------------------------------------------
+        p3_messages = [
+            {"role": "system", "content": "Phase 3: The Editor. Polish the manuscript. Ensure perfect academic tone, strict adherence to allowed sections, factual alignment with original data, and sequential citation numbering."},
+            {"role": "user", "content": f"""Review and refine this draft for final publication.
+
+### DRAFT TO REFINE ###
+{draft}
+
+### ORIGINAL CLINICAL ATOMS (FOR FACT-CHECKING) ###
+- History: {hist_str}
+- Presentation: {pres_str}
+- Diagnostics: {diag_str}
+- Management: {mgmt_str}
+- Outcome: {out_str}
+
+### EDITORIAL STANDARDS (CRITICAL) ###
+1. Strict Sections: You MUST ONLY include the exact sections listed below:
+{sections_str}
+
+2. Citation Ordering: Renumber ALL in-text citations and the final References list so they appear in strict chronological sequence (e.g., [1], then [2]). 
+3. Fact-Check against Atoms: Cross-reference the DRAFT against the ORIGINAL CLINICAL ATOMS provided above. Correct any clinical values, timelines, or facts that drifted during the drafting phase.
+4. Verify Figures: Ensure ALL {num_images} images remain embedded via standard Markdown: ![Figure X](IMG_XXXXXX).
+5. Perfect Formatting: Output ONLY the final perfected Markdown manuscript. Do not include any preambles or AI disclaimers."""}
+        ]
+        p3_log = self._execute_llm_loop(p3_messages, [], case_data, "Phase_3_Refining", image_map=image_map)
+        trajectory_log["phases"]["phase_3"] = p3_log
+        
+        # ------------------------------------------------------------------
+        # FINALIZATION
+        # ------------------------------------------------------------------
+        # Process the final output to replace the virtual IDs with real paths
+        final_markdown = self._post_process_markdown(p3_log["final_output"], image_map)
+        
+        # Save the final text
         output_file = os.path.join(case_dir, f"{case_id}_generated.md")
         with open(output_file, "w", encoding='utf-8') as f:
             f.write(final_markdown)
@@ -343,12 +424,20 @@ class GenerationPipeline:
         log_output_path = os.path.join(case_dir, f"generation_log_{self.mode}.json")
         
         print(f"\nProcessing Case ID: {case_id} | Mode: {self.mode.upper()} | JSON Path: {json_path}")
-        start_time = time.time()
+        
+        # Track master timestamps
+        start_dt = datetime.now()
+        start_time_real = time.time()
         
         log_envelope = {
             "case_id": case_id,
             "mode": self.mode,
-            "timestamp": datetime.now().isoformat(),
+            "start_time": start_dt.isoformat(),
+            "end_time": None,
+            "total_time_seconds": 0,
+            "total_api_calls": 0,
+            "total_prompt_tokens": 0,
+            "total_comp_tokens": 0,
             "status": "failed",
             "error_message": None
         }
@@ -368,9 +457,17 @@ class GenerationPipeline:
 
             if self.mode == "single":
                 result_data = self.process_case_single(case_id, case_data, source_dir, sections_str, case_dir)
+                phases = [result_data.get("execution", {})]
             else:
                 result_data = self.process_case_multi(case_id, case_data, source_dir, sections_str, case_dir)
+                phases = list(result_data.get("phases", {}).values())
                 
+            # Aggregate totals across all phases
+            for p in phases:
+                log_envelope["total_api_calls"] += p.get("api_call_count", 0)
+                log_envelope["total_prompt_tokens"] += p.get("total_prompt_tokens", 0)
+                log_envelope["total_comp_tokens"] += p.get("total_comp_tokens", 0)
+
             log_envelope.update(result_data)
             log_envelope["status"] = "success"
             print(f"[+] {case_id}: {self.mode.capitalize()}-stage generation complete.")
@@ -380,7 +477,10 @@ class GenerationPipeline:
             print(f"[X] {case_id}: Error -> {e}")
             
         finally:
-            log_envelope["total_time_seconds"] = round(time.time() - start_time, 2)
+            # Mark the global end times
+            log_envelope["end_time"] = datetime.now().isoformat()
+            log_envelope["total_time_seconds"] = round(time.time() - start_time_real, 2)
+            
             with open(log_output_path, "w", encoding="utf-8") as f:
                 json.dump(log_envelope, f, indent=4)
 

@@ -90,7 +90,7 @@ def main():
     parser.add_argument(
         "--folder", 
         type=str, 
-        default="/home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_gpt-4.1/20260401_083212"
+        default="/home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_qwen3.5-plus/20260402_111326"
         
         # qwen3.5-27b api path
         # /home/data1/musong/workspace/2026/03/22/log/pipeline_qwen3.5-27b/20260322_173947
@@ -107,6 +107,9 @@ def main():
         # qwen3.5-27b fp8 local path
         # /home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_qwen3.5-27b-fp8/20260325_095032
         # /home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_qwen3.5-27b-fp8/20260326_143348
+        
+        # qwen3.5-plus
+        # /home/data1/musong/workspace/2026/03/07/helloworld/log/pipeline_qwen3.5-plus/20260402_111326
     )
     args = parser.parse_args()
 
