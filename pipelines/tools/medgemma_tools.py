@@ -1,12 +1,14 @@
 import os
 import json
 from typing import Union, Dict, Any
+import base64
+import requests
+from io import BytesIO
 import cv2
 import numpy as np
 import torch
 from PIL import Image
 from transformers import pipeline
-
 
 # 1. Global pipeline variable to prevent reloading the model on every tool call
 MEDGEMMA_PIPE = None
@@ -118,9 +120,12 @@ def analyze_radiology_image(
     query: str = "Can you analyze this medical image and describe any notable clinical findings?",
     execution_log: dict = None,
     case_data: dict = None,
+    use_vllm: bool = False,                           # <-- NEW: vLLM toggle
+    vllm_url: str = "http://localhost:8008/v1",       # <-- NEW: vLLM server endpoint
+    vllm_model: str = "/home/data1/musong/.cache/huggingface/hub/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641", # <-- NEW: vLLM model name/path
     **kwargs
 ) -> str:
-    """Loads an image, splits it into panels, and runs MedGemma."""
+    """Loads an image, splits it into panels, and runs MedGemma (locally or via vLLM)."""
     
     # 1. Secretly resolve the real path using the injected data
     mapped_images = execution_log.get("mapped_images", {}) if execution_log else {}
@@ -132,14 +137,14 @@ def analyze_radiology_image(
     image_path = os.path.join(source_dir, real_filename)
     
     print(f"    [!] Internal Tool Logic resolved {image_reference_id} to local path: {real_filename}")
-    print(f"    [*] MedGemma analyzing image: {image_path}")
+    print(f"    [*] MedGemma analyzing image: {image_path} (vLLM: {use_vllm})")
     
-    # 1. Load the original image
+    # 2. Load the original image
     original_img = cv2.imread(image_path)
     if original_img is None:
         return json.dumps({"error": f"Failed to load image at {image_path}. Check file path."})
 
-    # 2. Extract panels using your existing split logic
+    # 3. Extract panels using your existing split logic
     try:
         extracted_data = extract_image_panels(
             image_input=original_img, 
@@ -149,57 +154,95 @@ def analyze_radiology_image(
     except Exception as e:
         return json.dumps({"error": f"Image splitting failed: {str(e)}"})
 
-    # 3. Initialize MedGemma
-    pipe = get_medgemma_pipe()
+    # 4. Initialize Local Pipeline ONLY if not using vLLM
+    pipe = None
+    if not use_vllm:
+        pipe = get_medgemma_pipe()
+        
     results = {}
 
-    # 4. Process each panel
+    # 5. Process each panel
     for panel_name, data in extracted_data.items():
-        # Convert OpenCV BGR array to PIL RGB Image for MedGemma
+        # Convert OpenCV BGR array to PIL RGB Image
         panel_bgr = data['image']
         panel_rgb = cv2.cvtColor(panel_bgr, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(panel_rgb)
 
-        messages = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "image", "image": pil_img},
-                    {"type": "text", "text": query}
-                ]
-            }
-        ]
-
         try:
-            # Run inference
-            output = pipe(text=messages, max_new_tokens=256)
+            text_response = "Error: Could not parse output."
             
-            # --- UPDATED EXTRACTION LOGIC ---
-            text_response = "Error: Could not parse MedGemma output."
-            
-            if isinstance(output, list) and len(output) > 0 and 'generated_text' in output[0]:
-                generated_sequence = output[0]['generated_text']
+            # --- vLLM INFERENCE ROUTE ---
+            if use_vllm:
+                # Convert PIL image to base64 for the API payload
+                buffered = BytesIO()
+                pil_img.save(buffered, format="JPEG")
+                img_b64_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
                 
-                # The pipeline returns the conversation history array.
-                # Loop backwards to find the latest 'assistant' response.
-                if isinstance(generated_sequence, list):
-                    for msg in reversed(generated_sequence):
-                        if msg.get('role') == 'assistant':
-                            text_response = msg.get('content', '')
-                            break
-                elif isinstance(generated_sequence, str):
-                    text_response = generated_sequence
+                headers = {"Content-Type": "application/json"}
+                payload = {
+                    "model": vllm_model,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": query},
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{img_b64_str}"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "max_tokens": 256
+                }
+                
+                # Make the request to the vLLM server
+                response = requests.post(f"{vllm_url}/chat/completions", headers=headers, json=payload)
+                response.raise_for_status()
+                
+                # Parse vLLM API response
+                vllm_data = response.json()
+                text_response = vllm_data["choices"][0]["message"]["content"]
+                
+            # --- LOCAL PIPELINE ROUTE ---
             else:
-                text_response = str(output)
+                messages = [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "image": pil_img},
+                            {"type": "text", "text": query}
+                        ]
+                    }
+                ]
+                output = pipe(text=messages, max_new_tokens=256)
                 
+                if isinstance(output, list) and len(output) > 0 and 'generated_text' in output[0]:
+                    generated_sequence = output[0]['generated_text']
+                    
+                    if isinstance(generated_sequence, list):
+                        for msg in reversed(generated_sequence):
+                            if msg.get('role') == 'assistant':
+                                text_response = msg.get('content', '')
+                                break
+                    elif isinstance(generated_sequence, str):
+                        text_response = generated_sequence
+                else:
+                    text_response = str(output)
+                    
             results[panel_name] = text_response
             print(f"        -> {panel_name} analyzed successfully.")
             
+        except requests.exceptions.RequestException as e:
+            results[panel_name] = f"vLLM API error: {str(e)}"
+            print(f"        -> [X] Failed to reach vLLM for {panel_name}: {e}")
         except Exception as e:
             results[panel_name] = f"Inference error: {str(e)}"
             print(f"        -> [X] Failed to analyze {panel_name}: {e}")
 
-    # 5. Return JSON string to the LLM (Now safely stripped of PIL objects)
+    # 6. Return JSON string to the LLM
     return json.dumps({
         "status": "success",
         "panels_detected": len(extracted_data),

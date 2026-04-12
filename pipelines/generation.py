@@ -12,7 +12,7 @@ from .utils import get_openai_client, finalize_prompt, generate_llm_response, fo
 from .tools.registry import TOOL_SCHEMAS, AVAILABLE_TOOLS
 
 class GenerationPipeline:
-    def __init__(self, working_dir: str, model_id: str, mode: str = "single", client=None):
+    def __init__(self, working_dir: str, model_id: str, mode: str = "single", client=None, tools_config: dict = None):
         """
         Initializes the pipeline to generate medical journal articles from JSON atoms.
         :param mode: "single" for one-shot generation, "multi" for the 4-phase distillation pipeline.
@@ -21,6 +21,7 @@ class GenerationPipeline:
         self.model_id = model_id
         self.mode = mode.lower()
         self.client = client if client else get_openai_client()
+        self.tools_config = tools_config or {} # <--- NEW: Store the tools config
 
     def _encode_image(self, image_path: str) -> str:
         with open(image_path, "rb") as image_file:
@@ -181,7 +182,20 @@ class GenerationPipeline:
                     function_args["case_data"] = case_data
                     function_args["execution_log"] = phase_log 
                     
-                    log_args = {k: v for k, v in function_args.items() if k not in ["execution_log", "case_data"]}
+                    # --- NEW: INJECT YAML CONFIG FOR MEDGEMMA ---
+                    if function_name == "analyze_radiology_image":
+                        medgemma_cfg = self.tools_config.get("medgemma", {})
+                        if "use_vllm" in medgemma_cfg:
+                            function_args["use_vllm"] = medgemma_cfg["use_vllm"]
+                        if "vllm_url" in medgemma_cfg:
+                            function_args["vllm_url"] = medgemma_cfg["vllm_url"]
+                        if "vllm_model" in medgemma_cfg:
+                            function_args["vllm_model"] = medgemma_cfg["vllm_model"]
+                    # --------------------------------------------
+                    
+                    # Keep internal kwargs out of the terminal print
+                    excluded_keys = ["execution_log", "case_data", "use_vllm", "vllm_url", "vllm_model"]
+                    log_args = {k: v for k, v in function_args.items() if k not in excluded_keys}
                     tool_exec_log["arguments"] = log_args
                     print(f"        -> Tool: {function_name}({log_args})")
                     
