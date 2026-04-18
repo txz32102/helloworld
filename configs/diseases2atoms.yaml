@@ -1,0 +1,24 @@
+system:
+  proxy: "http://127.0.0.1:7890"
+
+paths:
+  input_root_dir: "/home/data1/musong/workspace/2026/03/07/log/0413_different_diseases"
+  output_root_dir: "/home/data1/musong/workspace/2026/03/07/log/0414_different_diseases_atoms"
+
+llm:
+  model_id: "Qwen/Qwen3.5-9B"
+  base_url: "http://127.0.0.1:9501/v1"
+  api_key: "EMPTY"
+
+pipelines:
+  extractor:
+    num_folders: 121
+    included_sections:
+      - "authors"
+      - "year"
+      - "figures"
+      - "tables"
+      - "citations"
+    char_limit: 100000
+    batch_size: 1
+    disease_names: []

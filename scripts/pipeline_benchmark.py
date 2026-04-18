@@ -36,7 +36,7 @@ class DualLogger:
 # ---------------------------------------------------------
 # 2. LOAD CONFIGURATION
 # ---------------------------------------------------------
-def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/config.yaml"):
+def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/diseases2atoms.yaml"):
     if not os.path.exists(config_file):
         raise FileNotFoundError(f"Configuration file {config_file} not found.")
     with open(config_file, "r", encoding="utf-8") as f:

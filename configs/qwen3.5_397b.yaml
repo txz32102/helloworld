@@ -1,0 +1,33 @@
+# config.yaml
+
+system:
+  proxy: "http://127.0.0.1:7890"
+
+paths:
+  data_dir: "/home/data1/musong/workspace/2026/03/07/log/0414_benchmark_atoms"
+  base_log_dir: "/home/data1/musong/workspace/2026/03/07/log/0415_benchmark_qwen3.5_397b"
+  fonts_dir: "fonts"
+
+llm:
+  # model_id: "gpt-5.4"
+  # base_url: "https://api.openai.com/v1" 
+  # api_key: "OPENAI_API_KEY"
+
+  # model_id: "/home/data1/musong/.cache/huggingface/hub/models--Qwen--Qwen3.5-27B-FP8/snapshots/2e1b21350ce589fcaafbb3c7d7eac526a7aed582"
+  # base_url: "http://localhost:9501/v1" 
+
+  model_id: "qwen3.5-plus"
+  base_url: "https://coding.dashscope.aliyuncs.com/v1" 
+  api_key: "CODING_PLAN"
+
+
+
+tools:
+  medgemma:
+    use_vllm: true
+    vllm_url: "http://localhost:8009/v1"
+    vllm_model: "/home/data1/musong/.cache/huggingface/hub/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641"
+
+pipelines:  
+  generator:
+    mode: "multi"

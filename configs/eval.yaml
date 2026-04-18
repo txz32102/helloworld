@@ -1,0 +1,22 @@
+# config.yaml
+
+system:
+  proxy: "http://127.0.0.1:7890"
+
+paths:
+  source_data_dir: "/home/data1/musong/workspace/2026/03/07/log/0416_big_table/benchmark_source_data"
+  log_dir: "/home/data1/musong/workspace/2026/03/07/log/0416_big_table/gpt5.4"
+  fonts_dir: "fonts"
+
+llm:
+  model_id: "qwen3.5-plus"
+  base_url: "https://coding.dashscope.aliyuncs.com/v1"
+  api_key: "CODING_PLAN"
+
+post_pdf_llms:
+  - model_id: "kimi-k2.5"
+    base_url: "https://coding.dashscope.aliyuncs.com/v1"
+    api_key: "CODING_PLAN"
+  - model_id: "gpt-5.4"
+    base_url: "https://api.openai.com/v1"
+    api_key: "OPENAI_API_KEY"

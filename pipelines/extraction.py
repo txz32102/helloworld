@@ -67,6 +67,9 @@ class AtomsExtractorPipeline:
 
             if abstract:
                 full_text_parts.append(f"ABSTRACT:\n{abstract}")
+                # Append Abstract to headers if not already present
+                if "Abstract" not in local_extracted_headers:
+                    local_extracted_headers.append("Abstract")
 
             # 2. Extract Sections (Grouping paragraphs by their heading)
             paragraphs = pp.parse_pubmed_paragraph(xml_path)
@@ -90,7 +93,9 @@ class AtomsExtractorPipeline:
                     sections_dict[sec_title].append(clean_text)
 
             for sec_title, texts in sections_dict.items():
-                local_extracted_headers.append(sec_title) 
+                # Check prevents duplicate headers (e.g., if a section is literally named "Abstract")
+                if sec_title not in local_extracted_headers:
+                    local_extracted_headers.append(sec_title) 
                 section_text = "\n\n".join(texts)
                 full_text_parts.append(f"--- {sec_title.upper()} ---\n{section_text}")
 
@@ -160,27 +165,29 @@ class AtomsExtractorPipeline:
 
     def _build_prompt(self, raw_text: str) -> str:
         """
-        Constructs the extraction prompt.
+        Constructs the extraction prompt for generating atomic clinical notes.
         """
         return f"""
         Role: Senior Clinical Data Architect.
-        Task: Extract clinical facts into structured JSON.
+        Task: Extract atomic clinical facts from the provided text into a strict structured JSON format.
         
         JSON SCHEMA:
         {{
-          "history": ["fact1", "fact2"],
-          "presentation": ["fact1"],
-          "diagnostics": ["fact1"],
-          "management": ["fact1"],
-          "outcome": ["fact1"]
+          "history": ["past medical history", "comorbidities", "demographics"],
+          "presentation": ["symptoms", "timeline of current illness", "physical exam findings"],
+          "diagnostics": ["lab results", "imaging findings", "pathology", "immunohistochemistry"],
+          "diagnosis": ["definitive primary disease", "differential diagnoses"],
+          "management": ["surgical interventions", "medications", "treatments"],
+          "outcome": ["patient-specific results", "follow-up status"]
         }}
 
         STRICT RULES:
-        1. "outcome" must ONLY contain patient-specific results (e.g. "Lesion reduced").
-        2. DELETE any sentences about "this report highlights", "first case", etc.
-        3. Do not include general disease facts.
-        4. Use all provided context (sections, tables, figures, etc.) to extract accurate facts.
-        5. Return ONLY the raw JSON object. No conversational text.
+        1. ISOLATE THE DISEASE: Explicitly identify the primary disease/condition diagnosed and place it in the "diagnosis" array. If multiple conditions or differential diagnoses are mentioned, list them as separate strings.
+        2. ATOMIC FACTS: Break down complex paragraphs into single, standalone concepts (e.g., "Histiocytic cells positive for CD68").
+        3. OUTCOME RESTRICTION: The "outcome" array must ONLY contain the patient's specific end-result or current status (e.g., "Patient is stable and being followed-up"). 
+        4. NO FLUFF: DELETE any meta-commentary (e.g., "this report highlights", "this is the first case of") and do not include general epidemiological facts about the disease.
+        5. COMPREHENSIVE EXTRACTION: Extract accurate facts from all provided text and metadata.
+        6. OUTPUT FORMAT: Return ONLY the raw JSON object. Do not include markdown code blocks (like ```json), conversational text, or explanations.
         
         TEXT AND METADATA:
         {raw_text}

@@ -170,3 +170,10 @@ Since `data/oa_file_list.txt` is frequently updated, the database must be synchr
 ```bash
 python3 preprocessing/update_db.py
 ```
+
+## 6. Filter the disease
+
+We can run the filter script to extract the diseases from the case reports based only on the abstract and title.
+```bash
+CUDA_VISIBLE_DEVICES=1 python3 preprocessing/filter_diseases.py
+```

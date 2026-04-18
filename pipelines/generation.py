@@ -462,6 +462,10 @@ No Conversational Filler: Provide only the medical report itself."""}
                 
             source_dir = case_data.get('metadata', {}).get('source_directory', 'Unknown')
             paper_sections = case_data.get('metadata', {}).get('paper_sections_found', ["Introduction", "Case Presentation", "Discussion"])
+            if "Abstract" not in paper_sections:
+                paper_sections.insert(0, "Abstract")
+            if "Title" not in paper_sections:
+                paper_sections.insert(0, "Title")
             sections_str = "\n".join([f"- {sec}" for sec in paper_sections])
             
             os.makedirs(case_dir, exist_ok=True)

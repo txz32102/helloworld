@@ -286,8 +286,13 @@ class MDConversionPipeline:
         Executes the batch processing loop.
         """
         print(f"Looking for XML files in: {self.data_dir}")
-        xml_files = glob.glob(os.path.join(self.data_dir, "*", "*.xml"))
-        
+        if isinstance(self.data_dir, list):
+            xml_files = []
+            for directory in self.data_dir:
+                xml_files.extend(glob.glob(os.path.join(directory, "*.xml")))
+        else:
+            xml_files = glob.glob(os.path.join(self.data_dir, "*", "*.xml"))
+
         if not xml_files:
             print("[-] No XML files found!")
             return
