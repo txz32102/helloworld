@@ -36,7 +36,7 @@ class DualLogger:
 # ---------------------------------------------------------
 # 2. LOAD CONFIGURATION
 # ---------------------------------------------------------
-def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/diseases2atoms.yaml"):
+def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/50_journals.yaml"):
     if not os.path.exists(config_file):
         raise FileNotFoundError(f"Configuration file {config_file} not found.")
     with open(config_file, "r", encoding="utf-8") as f:
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     # Setup dynamic directories
     cleaned_model_id = model_id.replace("/", "_") # Prevents directory creation errors if model_id has slashes
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = os.path.join(paths.get("base_log_dir", "log"), f"pipeline_{cleaned_model_id}", timestamp)
+    out_dir = os.path.join(paths.get("out_dir", "log"), f"pipeline_{cleaned_model_id}", timestamp)
     
     os.makedirs(out_dir, exist_ok=True)
     log_filepath = os.path.join(out_dir, f"{cleaned_model_id}_pipeline_execution.log")
@@ -106,9 +106,8 @@ if __name__ == "__main__":
     extractor = AtomsExtractorPipeline(
         data_dir=data_dir,
         out_dir=out_dir,
-        num_folders=extractor_cfg.get("num_folders", 20),
+        num_folders=extractor_cfg.get("num_folders"),
         model_id=model_id,
-        # client=client,  # Uncomment if your pipeline accepts the custom client
         included_sections=extractor_cfg.get("included_sections", [])
     )
     extractor.run()
@@ -117,7 +116,7 @@ if __name__ == "__main__":
     generator = GenerationPipeline(
         working_dir=out_dir, 
         model_id=model_id,
-        mode=generator_cfg.get("mode", "single"),
+        mode=generator_cfg.get("mode"),
         tools_config=tools_config
     )
     generator.run()
@@ -131,7 +130,6 @@ if __name__ == "__main__":
     evaluator = EvaluationPipeline(
         base_dir=out_dir, 
         model_id=model_id,
-        # client=client,
     )
     evaluator.run()
 

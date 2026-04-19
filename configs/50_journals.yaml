@@ -1,0 +1,32 @@
+system:
+  proxy: "http://127.0.0.1:7890"
+
+paths:
+  data_dir: "/home/data1/musong/workspace/2026/04/18/log/latest"
+  out_dir: "/home/data1/musong/workspace/2026/04/18/log/latest_gen"
+
+llm:
+  model_id: "gpt-5.4"
+  base_url: "https://api.openai.com/v1" 
+  api_key: "OPENAI_API_KEY"
+
+pipelines:
+  extractor:
+    num_folders: 121
+    included_sections:
+      - "authors"
+      - "year"
+      - "figures"
+      - "tables"
+      - "citations"
+    char_limit: 100000
+    batch_size: 1
+    disease_names: []
+  generator:
+    mode: "multi"
+
+tools:
+  medgemma:
+    use_vllm: true
+    vllm_url: "http://localhost:8009/v1"
+    vllm_model: "/home/data1/musong/.cache/huggingface/hub/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641"

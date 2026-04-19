@@ -12,7 +12,7 @@ Note that for the tools configs, we may use vllm to call the tools which is much
 
 ```bash
 CUDA_VISIBLE_DEVICES=4 vllm serve "/home/data1/musong/.cache/huggingface/hub/models--google--medgemma-1.5-4b-it/snapshots/e9792da5fb8ee651083d345ec4bce07c3c9f1641" \
-  --gpu-memory-utilization 0.9 \
+  --gpu-memory-utilization 0.8 \
   --dtype bfloat16 \
   --port 8009
 ```

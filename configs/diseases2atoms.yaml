@@ -6,9 +6,9 @@ paths:
   output_root_dir: "/home/data1/musong/workspace/2026/03/07/log/0414_different_diseases_atoms"
 
 llm:
-  model_id: "Qwen/Qwen3.5-9B"
-  base_url: "http://127.0.0.1:9501/v1"
-  api_key: "EMPTY"
+  model_id: "gpt-5.4"
+  base_url: "https://api.openai.com/v1" 
+  api_key: "OPENAI_API_KEY"
 
 pipelines:
   extractor:
