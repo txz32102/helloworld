@@ -36,7 +36,7 @@ class DualLogger:
 # ---------------------------------------------------------
 # 2. LOAD CONFIGURATION
 # ---------------------------------------------------------
-def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/50_journals.yaml"):
+def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/demo_two_data.yaml"):
     if not os.path.exists(config_file):
         raise FileNotFoundError(f"Configuration file {config_file} not found.")
     with open(config_file, "r", encoding="utf-8") as f:
@@ -49,22 +49,21 @@ if __name__ == "__main__":
     config = load_config()
 
     # Extract settings from config
-    paths = config.get("paths", {})
-    llm_config = config.get("llm", {})
-    sys_config = config.get("system", {})
-    pipeline_config = config.get("pipelines", {})
-    tools_config = config.get("tools", {})
+    paths = config.get("paths")
+    llm_config = config.get("llm")
+    sys_config = config.get("system")
+    pipeline_config = config.get("pipelines")
+    tools_config = config.get("tools")
 
-    data_dir = paths.get("data_dir", "data/default")
-    model_id = llm_config.get("model_id", "gpt-4.1")
+    data_dir = paths.get("data_dir")
+    prefix = paths.get("prefix")
+    model_id = llm_config.get("model_id")
     
-    # Setup dynamic directories
-    cleaned_model_id = model_id.replace("/", "_") # Prevents directory creation errors if model_id has slashes
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_dir = os.path.join(paths.get("out_dir", "log"), f"pipeline_{cleaned_model_id}", timestamp)
+    out_dir = os.path.join(paths.get("out_dir", "log"), f"pipeline_{prefix}", timestamp)
     
     os.makedirs(out_dir, exist_ok=True)
-    log_filepath = os.path.join(out_dir, f"{cleaned_model_id}_pipeline_execution.log")
+    log_filepath = os.path.join(out_dir, f"{prefix}_pipeline_execution.log")
 
     # Initialize Dual Logger
     sys.stdout = DualLogger(log_filepath)

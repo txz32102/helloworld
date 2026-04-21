@@ -375,8 +375,8 @@ Strategic Plan & Outline:
 1. Tone & Style: Authoritative, objective, and scholarly medical tone. Target 1500 to 2500 words.
 2. Mandatory Structure (STRICT): You MUST ONLY use the section headings provided below. Do NOT generate any other sections:
 {sections_str}
-3. Abstract Formatting: The abstract MUST be written as a single, continuous paragraph. Strictly avoid using structured subheadings (e.g., "Background:", "Case Presentation:", "Conclusion:") within the abstract body.
-4. Citation Requirement: You must generate and integrate a minimum of ten (10) relevant academic citations appropriately throughout the manuscript.
+3. Abstract Formatting: The abstract MUST be written as a single, continuous paragraph. Strictly avoid using structured subheadings (e.g., "Background:", "Case Presentation:", "Conclusion:") within the abstract body. No more than 200 words.
+4. Sparsely integrate at least 10 relevant references (e.g., academic papers, official guidelines) throughout the main text. Do not include any citations in the abstract.
 5. Figure Integration: 
    You have been provided with EXACTLY {num_images} images. Reference IDs: [{ids_string}].
    Embed EVERY SINGLE IMAGE using this Markdown syntax:
