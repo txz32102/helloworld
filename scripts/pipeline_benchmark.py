@@ -36,7 +36,7 @@ class DualLogger:
 # ---------------------------------------------------------
 # 2. LOAD CONFIGURATION
 # ---------------------------------------------------------
-def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/demo_two_data.yaml"):
+def load_config(config_file="/home/data1/musong/workspace/2026/03/07/helloworld/configs/20260423_demo.yaml"):
     if not os.path.exists(config_file):
         raise FileNotFoundError(f"Configuration file {config_file} not found.")
     with open(config_file, "r", encoding="utf-8") as f:
@@ -60,6 +60,7 @@ if __name__ == "__main__":
     model_id = llm_config.get("model_id")
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    # timestamp = "20260423_155438"
     out_dir = os.path.join(paths.get("out_dir", "log"), f"pipeline_{prefix}", timestamp)
     
     os.makedirs(out_dir, exist_ok=True)

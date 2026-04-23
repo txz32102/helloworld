@@ -1,6 +1,7 @@
 from .pubmed_tools import search_pubmed, fetch_ama_citations
 from .clingen_tools import search_clingen_by_keyword, fetch_clingen_variant_data
 from .medgemma_tools import analyze_radiology_image
+from .composite_tools import analyze_composite_figure
 
 # 1. Define the schema for the LLM
 PUBMED_TOOL_SCHEMA = {
@@ -8,10 +9,12 @@ PUBMED_TOOL_SCHEMA = {
     "function": {
         "name": "search_pubmed",
         "description": (
-            "CRITICAL: You MUST use this tool to find real, recent, peer-reviewed medical literature. "
-            "DO NOT HALLUCINATE OR INVENT CITATIONS. All references in your final output MUST be verified "
+            "Use this tool to find real, recent, peer-reviewed medical literature candidates. "
+            "DO NOT HALLUCINATE OR INVENT CITATIONS. References in the final output MUST be verified "
             "using this tool and MUST include a valid DOI or PMID. "
-            "Use this tool to find scientific context, epidemiology, and standard treatment guidelines."
+            "Use this tool for scientific context, epidemiology, diagnostic criteria, and treatment guidelines. "
+            "For manuscript generation, retrieve enough candidates to support at least 10 verified final references. "
+            "Do not cite every returned result; select a compact set of high-relevance sources and avoid citation stuffing."
         ),
         "parameters": {
             "type": "object",
@@ -25,8 +28,8 @@ PUBMED_TOOL_SCHEMA = {
                 },
                 "max_results": {
                     "type": "integer",
-                    "description": "Number of papers to return. Default is 5.",
-                    "default": 5
+                    "description": "Number of papers to return. Default is 10; use 10 to 15 when building a manuscript citation bank.",
+                    "default": 10
                 }
             },
             "required": ["query"]
@@ -39,10 +42,12 @@ FETCH_CITATION_SCHEMA = {
     "function": {
         "name": "fetch_ama_citations", # Updated to plural to match the new function name
         "description": (
-            "Given a list of DOIs (Digital Object Identifiers) obtained from the search_pubmed tool, "
-            "this tool returns perfectly formatted, sequentially numbered AMA (American Medical Association) citation strings. "
+            "Given a selected list of DOIs (Digital Object Identifiers) obtained from the search_pubmed tool, "
+            "this tool returns formatted, sequentially numbered AMA (American Medical Association) citation strings. "
             "You can pass a single DOI or multiple DOIs at once. "
-            "You MUST use this tool to build your References section to ensure perfect formatting."
+            "Use this tool to build the References section from only the sources that will be cited inline. "
+            "For manuscript generation, request no fewer than 10 selected DOIs when available so the final article can meet the minimum citation requirement. "
+            "The formatted citation strings returned by this tool are the only approved source for final References entries; do not let the LLM invent reference strings."
         ),
         "parameters": {
             "type": "object",
@@ -136,6 +141,36 @@ MEDGEMMA_TOOL_SCHEMA = {
     }
 }
 
+COMPOSITE_FIGURE_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "analyze_composite_figure",
+        "description": (
+            "Analyzes complex, multi-panel composite medical images (e.g., figures containing sub-labels like A, B, C, "
+            "or mixed imaging modalities). "
+            "CRITICAL USAGE GUIDELINES: "
+            "1. Use this tool ONLY when the image contains multiple sub-figures or panels. "
+            "2. It automatically pulls clinical context to generate a comprehensive, panel-by-panel description. "
+            "3. Preserve visible panel labels exactly (e.g., A and B) so the manuscript can mention Figure 1A and Figure 1B in the main text. "
+            "4. Use standard `analyze_radiology_image` for single-modality, single-frame scans."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "image_reference_id": {
+                    "type": "string",
+                    "description": "The virtual Reference ID of the composite image exactly as provided in the prompt (e.g., 'IMG_A1B2C3')."
+                },
+                "query": {
+                    "type": "string",
+                    "description": "Specific focus areas, structural requirements, or formatting instructions for the vision model (e.g., 'Explicitly separate analysis into Panel A and Panel B, and keep caption-relevant findings concise')."
+                }
+            },
+            "required": ["image_reference_id"]
+        }
+    }
+}
+
 # ==========================================
 # TOOL REGISTRY AND MAPPING
 # ==========================================
@@ -145,7 +180,8 @@ AVAILABLE_TOOLS = {
     "search_clingen_by_keyword": search_clingen_by_keyword,
     "fetch_clingen_variant_data": fetch_clingen_variant_data,
     "analyze_radiology_image": analyze_radiology_image,
-    "fetch_ama_citations": fetch_ama_citations
+    "fetch_ama_citations": fetch_ama_citations,
+    "analyze_composite_figure": analyze_composite_figure,
 }
 
 TOOL_SCHEMAS = [
@@ -153,5 +189,6 @@ TOOL_SCHEMAS = [
     CLINGEN_SEARCH_SCHEMA,
     CLINGEN_FETCH_SCHEMA,
     MEDGEMMA_TOOL_SCHEMA,
-    FETCH_CITATION_SCHEMA
+    FETCH_CITATION_SCHEMA,
+    COMPOSITE_FIGURE_SCHEMA,
 ]

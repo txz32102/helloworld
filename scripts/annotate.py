@@ -8,8 +8,8 @@ import uvicorn
 app = FastAPI()
 
 # --- CONFIGURATION ---
-DATA_ROOT = "data/download_files"
-PROGRESS_FILE = "log/annotate/progress.txt"
+DATA_ROOT = "data/2026"
+PROGRESS_FILE = "log/annotate/progress_2026.txt"
 
 os.makedirs("log/annotate", exist_ok=True)
 

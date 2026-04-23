@@ -4,8 +4,8 @@ system:
   proxy: "http://127.0.0.1:7890"
 
 paths:
-  data_dir: "/home/data1/musong/workspace/2026/03/07/helloworld/data/demo_two_data"
-  out_dir: "/home/data1/musong/workspace/2026/03/07/log/0420_demo_two_data"
+  data_dir: "/home/data1/musong/workspace/2026/03/07/helloworld/data/20260423_demo"
+  out_dir: "/home/data1/musong/workspace/2026/03/07/log/20260423_demo"
   prefix: "gpt_5.4"
   fonts_dir: "fonts"
 
@@ -30,6 +30,6 @@ tools:
 
 pipelines:
   extractor:
-    num_folders: 2
+    num_folders: 1
   generator:
     mode: "multi"

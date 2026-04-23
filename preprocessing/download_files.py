@@ -13,7 +13,7 @@ from collections import defaultdict
 BASE_S3_URL = "https://pmc-oa-opendata.s3.amazonaws.com"
 PUBMED_URL_TEMPLATE = "https://pubmed.ncbi.nlm.nih.gov/{}/"
 SAFE_LICENSES = ['CC BY', 'CC BY-SA', 'CC0']
-TARGET_YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026]
+TARGET_YEARS = [2026]
 
 def download_file(url, folder):
     """Helper to download a single file into a folder."""
@@ -97,7 +97,7 @@ def process_article(row_data, output_dir):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", type=str, default="data/llm_filtered.db")
-    parser.add_argument("--out", type=str, default="data/download_files")
+    parser.add_argument("--out", type=str, default="data/2026")
     parser.add_argument("--log_dir", type=str, default="log/preprocessing", help="Directory for failure logs")
     parser.add_argument("--limit", type=int, default=3000)
     parser.add_argument("--workers", type=int, default=8) 
