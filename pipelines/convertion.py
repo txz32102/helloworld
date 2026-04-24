@@ -5,6 +5,7 @@ import json
 import xml.etree.ElementTree as ET
 import pubmed_parser as pp
 import urllib.parse
+import urllib.request
 from jinja2 import Template
 from weasyprint import HTML
 import markdown
@@ -25,14 +26,14 @@ class PMCArticleParser:
 
     def _extract_basic_info(self):
         """Extracts title, abstract, and authors."""
-        basic_info = pp.parse_pubmed_xml(self.file_path)
+        basic_info = pp.parse_pubmed_xml(self.file_path) or {}
         self.article_data['title'] = basic_info.get('full_title', '')
         self.article_data['abstract'] = basic_info.get('abstract', '')
         self.article_data['authors'] = basic_info.get('author_list', [])
 
     def _extract_main_content(self):
         """Extracts the main text body paragraph by paragraph, preserving section headers."""
-        paragraphs = pp.parse_pubmed_paragraph(self.file_path)
+        paragraphs = pp.parse_pubmed_paragraph(self.file_path) or []
         self.article_data['main_content'] = []
         
         for p in paragraphs:
@@ -51,7 +52,11 @@ class PMCArticleParser:
 
     def _extract_figures(self):
         """Extracts figure count, labels, captions, and the actual graphic filenames."""
-        captions = pp.parse_pubmed_caption(self.file_path)
+        try:
+            captions = pp.parse_pubmed_caption(self.file_path) or []
+        except Exception as e:
+            print(f"[!] Warning: failed to parse figure captions for {self.file_path}: {e}")
+            captions = []
         
         tree = ET.parse(self.file_path)
         root = tree.getroot()
@@ -81,7 +86,11 @@ class PMCArticleParser:
 
     def _extract_citations(self):
         """Extracts the reference list and manually parses DOIs from the XML."""
-        refs = pp.parse_pubmed_references(self.file_path)
+        try:
+            refs = pp.parse_pubmed_references(self.file_path) or []
+        except Exception as e:
+            print(f"[!] Warning: failed to parse references for {self.file_path}: {e}")
+            refs = []
         
         tree = ET.parse(self.file_path)
         root = tree.getroot()
