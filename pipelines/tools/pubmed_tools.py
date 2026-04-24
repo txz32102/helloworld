@@ -4,6 +4,102 @@ import re
 from typing import Union, List
 import xml.etree.ElementTree as ET
 
+def _extract_element_text(element) -> str:
+    """Safely flattens XML text, including nested tags."""
+    if element is None:
+        return ""
+    return " ".join(part.strip() for part in element.itertext() if part and part.strip()).strip()
+
+def fetch_pubmed_details(
+    pmids: Union[str, int, List[Union[str, int]]],
+    timeout: int = 10,
+    **kwargs
+) -> List[dict]:
+    """
+    Fetches structured PubMed metadata for one or more PMIDs.
+
+    Returned keys:
+    - pmid
+    - pmcid
+    - doi
+    - title
+    - journal
+    - year
+    - abstract
+    """
+    if isinstance(pmids, (str, int)):
+        pmids = [pmids]
+
+    clean_pmids = [str(pmid).strip() for pmid in pmids if str(pmid).strip()]
+    if not clean_pmids:
+        return []
+
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+    api_key = os.environ.get("NCBI_API_KEY")
+    fetch_url = f"{base_url}/efetch.fcgi"
+    fetch_params = {
+        "db": "pubmed",
+        "id": ",".join(clean_pmids),
+        "retmode": "xml"
+    }
+
+    if api_key:
+        fetch_params["api_key"] = api_key
+
+    response = requests.get(fetch_url, params=fetch_params, timeout=timeout)
+    response.raise_for_status()
+
+    root = ET.fromstring(response.content)
+    records_by_pmid = {}
+
+    for article in root.findall(".//PubmedArticle"):
+        pmid = _extract_element_text(article.find(".//MedlineCitation/PMID"))
+        if not pmid:
+            continue
+
+        title = _extract_element_text(article.find(".//ArticleTitle"))
+        journal = _extract_element_text(article.find(".//Journal/Title"))
+
+        pub_year = _extract_element_text(article.find(".//PubDate/Year"))
+        if not pub_year:
+            pub_year = _extract_element_text(article.find(".//PubDate/MedlineDate"))
+            year_match = re.search(r"\b(19|20)\d{2}\b", pub_year)
+            pub_year = year_match.group(0) if year_match else ""
+
+        abstract_parts = []
+        for abstract_text in article.findall(".//AbstractText"):
+            label = abstract_text.attrib.get("Label")
+            text = _extract_element_text(abstract_text)
+            if not text:
+                continue
+            if label:
+                abstract_parts.append(f"{label}: {text}")
+            else:
+                abstract_parts.append(text)
+        abstract = " ".join(abstract_parts).strip()
+
+        doi = ""
+        pmcid = ""
+        for article_id in article.findall(".//PubmedData/ArticleIdList/ArticleId"):
+            id_type = article_id.get("IdType")
+            value = _extract_element_text(article_id)
+            if id_type == "doi" and value:
+                doi = value
+            elif id_type == "pmc" and value:
+                pmcid = value if value.startswith("PMC") else f"PMC{value}"
+
+        records_by_pmid[pmid] = {
+            "pmid": pmid,
+            "pmcid": pmcid or None,
+            "doi": doi or None,
+            "title": title or None,
+            "journal": journal or None,
+            "year": int(pub_year) if str(pub_year).isdigit() else None,
+            "abstract": abstract or None,
+        }
+
+    return [records_by_pmid[pmid] for pmid in clean_pmids if pmid in records_by_pmid]
+
 def fetch_ama_citations(dois: Union[str, List[str]], **kwargs) -> str:
     """
     Fetches exact AMA-formatted citation strings for one or multiple DOIs.

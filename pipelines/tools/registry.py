@@ -2,6 +2,7 @@ from .pubmed_tools import search_pubmed, fetch_ama_citations
 from .clingen_tools import search_clingen_by_keyword, fetch_clingen_variant_data
 from .medgemma_tools import analyze_radiology_image
 from .composite_tools import analyze_composite_figure
+from .disease_importance_tools import assess_disease_importance
 
 # 1. Define the schema for the LLM
 PUBMED_TOOL_SCHEMA = {
@@ -61,6 +62,57 @@ FETCH_CITATION_SCHEMA = {
                 }
             },
             "required": ["dois"]
+        }
+    }
+}
+
+DISEASE_IMPORTANCE_SCHEMA = {
+    "type": "function",
+    "function": {
+        "name": "assess_disease_importance",
+        "description": (
+            "Use this tool when you need a conservative literature-grounded estimate of whether the current case "
+            "supports wording like 'rare disease', 'few prior reports', 'unusual presentation', or 'diagnostic challenge'. "
+            "It first retrieves similar prior cases from the local disease index, then preserves DOI/PMID/PMCID metadata "
+            "for the strongest evidence so the result remains citable. Do not use it to claim a definite 'first reported case' "
+            "unless the returned caveats and evidence clearly justify that level of certainty."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "diseases": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Primary disease terms for the current case. If omitted, the tool will try to infer them from the current case metadata."
+                    )
+                },
+                "related_keywords": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": (
+                        "Optional presentation or differential keywords that help refine retrieval, such as the unusual feature, organ, or mimic."
+                    )
+                },
+                "case_context": {
+                    "type": "string",
+                    "description": (
+                        "Optional short case summary or abstract excerpt that describes the unusual presentation, diagnostic challenge, or management issue."
+                    )
+                },
+                "top_k": {
+                    "type": "integer",
+                    "description": "Number of similar prior cases to retrieve before evidence filtering. Default is 8.",
+                    "default": 8
+                },
+                "fetch_full_text": {
+                    "type": "boolean",
+                    "description": (
+                        "Optional. If true, the tool may fetch a small amount of full-text XML for the top few retrieved papers when available."
+                    ),
+                    "default": False
+                }
+            }
         }
     }
 }
@@ -182,10 +234,12 @@ AVAILABLE_TOOLS = {
     "analyze_radiology_image": analyze_radiology_image,
     "fetch_ama_citations": fetch_ama_citations,
     "analyze_composite_figure": analyze_composite_figure,
+    "assess_disease_importance": assess_disease_importance,
 }
 
 TOOL_SCHEMAS = [
     PUBMED_TOOL_SCHEMA,
+    DISEASE_IMPORTANCE_SCHEMA,
     CLINGEN_SEARCH_SCHEMA,
     CLINGEN_FETCH_SCHEMA,
     MEDGEMMA_TOOL_SCHEMA,
